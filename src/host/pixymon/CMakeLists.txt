@@ -22,8 +22,6 @@ else()
 endif()
 
 # Include directories
-include_directories(../../common/inc)
-
 if(WIN32)
     include_directories(../windows)
 elseif(APPLE)
