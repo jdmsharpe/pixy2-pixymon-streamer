@@ -72,7 +72,11 @@ set(MOC_HEADERS
     configdialog.h
     connectevent.h
     console.h
+    httpserver.h
+    interpreter.h
     mainwindow.h
+    renderer.h
+    videowidget.h
 )
 
 # Header files without MOC requirements
@@ -82,8 +86,6 @@ set(HEADERS
     dfu.h
     dfu_info.h
     flash.h
-    httpserver.h
-    interpreter.h
     linemodule.h
     monmodule.h
     monparameterdb.h
@@ -91,11 +93,9 @@ set(HEADERS
     parameters.h
     pixymon.h
     reader.h
-    renderer.h
     sleeper.h
     usb_dfu.h
     usblink.h
-    videowidget.h
 
     ../../common/inc/calc.h
     ../../common/inc/chirp.hpp
