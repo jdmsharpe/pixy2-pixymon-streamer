@@ -6,6 +6,7 @@
 
 QT += core gui widgets xml
 QT += network
+QT += httpserver
 
 TARGET = PixyMon
 TEMPLATE = app
@@ -92,6 +93,7 @@ win32 {
 macx {
     ICON = pixy.icns
     DEFINES += __MACOS__
+    DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x050F00 
     #CONFIG += x86
     #CONFIG -= x86_64
     LIBS += -L/opt/local/lib -lusb-1.0
@@ -108,7 +110,6 @@ unix:!macx {
     INCLUDEPATH += /usr/include/libusb-1.0
     INCLUDEPATH += ../../../device/main_m4/inc/
     INCLUDEPATH += ../../../device/libpixy_m4/inc/
-   
 }
 
 RESOURCES += \

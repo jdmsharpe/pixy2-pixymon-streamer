@@ -4,10 +4,8 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QCoreApplication>
+#include <QHttpServer>
 
-#include <qhttpserver.h>
-#include <qhttprequest.h>
-#include <qhttpresponse.h>
 #include "interpreter.h"
 #include "renderer.h"
 
