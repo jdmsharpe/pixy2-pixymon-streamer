@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QCoreApplication>
 #include <QHttpServer>
+#include <QRegularExpression>
 
 #include "interpreter.h"
 #include "renderer.h"

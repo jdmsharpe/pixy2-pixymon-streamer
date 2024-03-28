@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <QPainter>
+#include <QRegularExpression>
 #include <stdio.h>
 #include <math.h>
 #include "linemodule.h"

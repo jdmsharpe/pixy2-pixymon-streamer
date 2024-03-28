@@ -22,6 +22,7 @@
 #include <QUrl>
 #include <QDesktopServices>
 #include <QSysInfo>
+#include <QRegularExpression>
 #include "mainwindow.h"
 #include "pixymon.h"
 #include "videowidget.h"

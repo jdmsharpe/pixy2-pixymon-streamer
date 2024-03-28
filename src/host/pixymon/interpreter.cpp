@@ -15,6 +15,7 @@
 
 #include <stdexcept>
 #include <QFile>
+#include <QRegularExpression>
 #include "debug.h"
 #include <stdarg.h>
 #include "interpreter.h"

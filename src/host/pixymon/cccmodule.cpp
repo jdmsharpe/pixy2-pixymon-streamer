@@ -14,6 +14,7 @@
 //
 
 #include <QPainter>
+#include <QRegularExpression>
 #include <stdio.h>
 #include "cccmodule.h"
 #include "interpreter.h"

@@ -16,6 +16,7 @@
 #include "debug.h"
 #include "interpreter.h"
 #include <QKeyEvent>
+#include <QRegularExpression>
 #include <QTextCursor>
 #include <QTextBlock>
 #include <QScrollBar>
