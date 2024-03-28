@@ -274,11 +274,11 @@ void ProgBlobs::handleButtonStatus(char *str)
 		return;
 	
 	if (m_buttonState<3)
-		sprintf(str, "Waiting for button selection");
+		asprintf(str, "Waiting for button selection");
 	else if (m_ledPipe)
-		sprintf(str, "Signature teaching mode for signature %d, press button again to finish.", m_index);
+		asprintf(str, "Signature teaching mode for signature %d, press button again to finish.", m_index);
 	else
-		sprintf(str, "Setting white balance, press button again to exit.");
+		asprintf(str, "Setting white balance, press button again to exit.");
 }
 
 void ProgBlobs::setSignature()

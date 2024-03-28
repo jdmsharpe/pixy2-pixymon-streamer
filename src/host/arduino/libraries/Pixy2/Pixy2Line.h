@@ -51,7 +51,7 @@ struct Vector
   void print()
   {
     char buf[64];
-    sprintf(buf, "vector: (%d %d) (%d %d) index: %d flags %d", m_x0, m_y0, m_x1, m_y1, m_index, m_flags);
+    asprintf(buf, "vector: (%d %d) (%d %d) index: %d flags %d", m_x0, m_y0, m_x1, m_y1, m_index, m_flags);
 	  Serial.println(buf);
   }
   
@@ -76,11 +76,11 @@ struct Intersection
   {
     char buf[64];
     uint8_t i;
-    sprintf(buf, "intersection: (%d %d)", m_x, m_y);
+    asprintf(buf, "intersection: (%d %d)", m_x, m_y);
 	  Serial.println(buf);
     for (i=0; i<m_n; i++)
     {
-      sprintf(buf, "  %d: index: %d angle: %d", i, m_intLines[i].m_index, m_intLines[i].m_angle);
+      asprintf(buf, "  %d: index: %d angle: %d", i, m_intLines[i].m_index, m_intLines[i].m_angle);
 	    Serial.println(buf);
     }
   }
@@ -98,7 +98,7 @@ struct Barcode
   void print()
   {
     char buf[64];
-    sprintf(buf, "Barcode: (%d %d), val: %d flags: %d", m_x, m_y, m_code, m_flags);
+    asprintf(buf, "Barcode: (%d %d), val: %d flags: %d", m_x, m_y, m_code, m_flags);
     Serial.println(buf);
   }
   

@@ -38,7 +38,7 @@ void loop()
   // print all vectors
   for (i=0; i<pixy.line.numVectors; i++)
   {
-    sprintf(buf, "line %d: ", i);
+    asprintf(buf, "line %d: ", i);
     Serial.print(buf);
     pixy.line.vectors[i].print();
   }
@@ -46,7 +46,7 @@ void loop()
   // print all intersections
   for (i=0; i<pixy.line.numIntersections; i++)
   {
-    sprintf(buf, "intersection %d: ", i);
+    asprintf(buf, "intersection %d: ", i);
     Serial.print(buf);
     pixy.line.intersections[i].print();
   }
@@ -54,7 +54,7 @@ void loop()
   // print all barcodes
   for (i=0; i<pixy.line.numBarcodes; i++)
   {
-    sprintf(buf, "barcode %d: ", i);
+    asprintf(buf, "barcode %d: ", i);
     Serial.print(buf);
     pixy.line.barcodes[i].print();
   }

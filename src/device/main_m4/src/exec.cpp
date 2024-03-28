@@ -319,7 +319,7 @@ uint32_t exec_running(Chirp *chirp)
 		{
 			// add frames per second to status message, but only if we're running (and period isn't zero)
 			float fps = cam_getFPS();
-				sprintf(statusString + strlen(statusString), " running %.2f fps", fps);
+				asprintf(statusString + strlen(statusString), " running %.2f fps", fps);
 		}
 		else
 			strcat(statusString, " stopped");
@@ -617,7 +617,7 @@ static void loadParams()
 	strcpy(buf, "Selects the program number that's run upon power-up. @c Expert");
 	for (i=0; i<ProgTableUtil::m_progTableIndex; i++)
 	{
-		sprintf(buf2, " @s %d=%s", i, ProgTableUtil::m_progTable[i].m_name);
+		asprintf(buf2, " @s %d=%s", i, ProgTableUtil::m_progTable[i].m_name);
 		strcat(buf, buf2);
 	} 
 

@@ -114,7 +114,7 @@ int cc_loadLut(void)
 
 	for (i=1; i<=CL_NUM_SIGNATURES; i++)
 	{
-		sprintf(id, "signature%d", i);
+		asprintf(id, "signature%d", i);
 		// get signature and add to color lut
 		res = prm_get(id, &len, &psig, END);
 		if (res<0)
@@ -185,21 +185,21 @@ void cc_loadParams(void)
 	// set up signatures, and ranges, load later
 	for (i=1; i<=CL_NUM_SIGNATURES; i++)
 	{
-		sprintf(id, "signature%d", i);
-		sprintf(desc, "Color signature %d", i);
+		asprintf(id, "signature%d", i);
+		asprintf(desc, "Color signature %d", i);
 		// add if it doesn't exist yet
 		prm_add(id, progFlags | PRM_FLAG_INTERNAL, PRM_PRIORITY_DEFAULT, desc, INTS8(sizeof(ColorSignature), &signature), END);
 
-		sprintf(id, "Signature %d range", i);
-		sprintf(desc, "@c Tuning @m 0.0 @M 25.0 Sets filtering range of signature %d. (default 3.5)", i);
+		asprintf(id, "Signature %d range", i);
+		asprintf(desc, "@c Tuning @m 0.0 @M 25.0 Sets filtering range of signature %d. (default 3.5)", i);
 		prm_add(id, progFlags | PRM_FLAG_SLIDER, PRM_PRIORITY_5, desc, FLT32(3.5f), END);
 
 		prm_get(id, &range, END);
 		g_blobs->m_clut.setSigRange(i, range);
 		prm_setShadowCallback(id, (ShadowCallback)cc_signatureCallback);
 
-		sprintf(id, "Signature label %d", i);
-		sprintf(desc, "@c Signature_Labels Sets the label for objects that match signature %d.", i);
+		asprintf(id, "Signature label %d", i);
+		asprintf(desc, "@c Signature_Labels Sets the label for objects that match signature %d.", i);
 		prm_add(id, progFlags, PRM_PRIORITY_3, desc, STRING(""), END);
 	}
 
@@ -318,7 +318,7 @@ int32_t cc_setSigRegion(const uint32_t &type, const uint8_t &signum, const uint1
 	sig->m_rgb = ip.averageRgb();
 
 	// save to flash
-	sprintf(id, "signature%d", signum);
+	asprintf(id, "signature%d", signum);
 	prm_set(id, INTS8(sizeof(ColorSignature), sig), END);
 	cc_loadLut();
 
@@ -355,7 +355,7 @@ int32_t cc_setSigPoint(const uint32_t &type, const uint8_t &signum, const uint16
 	cc_sendPoints(points, CL_GROW_INC, CL_GROW_INC, chirp);
 
 	// save to flash
-	sprintf(id, "signature%d", signum);
+	asprintf(id, "signature%d", signum);
 	prm_set(id, INTS8(sizeof(ColorSignature), sig), END);
 	cc_loadLut();
 
@@ -376,7 +376,7 @@ int32_t cc_clearSig(const uint8_t &signum, Chirp *chirp)
 
 	memset(&sig, 0, sizeof(ColorSignature));
 
-	sprintf(id, "signature%d", signum);
+	asprintf(id, "signature%d", signum);
 	res = prm_set(id, INTS8(sizeof(ColorSignature), &sig), END);
 	cc_loadLut();
 
@@ -399,7 +399,7 @@ int32_t cc_clearAllSig(Chirp *chirp)
 
    	for (signum=1; signum<=CL_NUM_SIGNATURES; signum++)
 	{
-		sprintf(id, "signature%d", signum);
+		asprintf(id, "signature%d", signum);
 		res = prm_set(id, INTS8(sizeof(ColorSignature), &sig), END);
 		if (res<0)
 			return res;			
@@ -424,8 +424,8 @@ int32_t cc_setLabel(const uint32_t &signum, const char *label, Chirp *chirp)
 	if (signum<1 || signum>76767) // can't get any greater than 76767
 		return -1;
 
-	sprintf(id, "Signature label %d", signum);
-	sprintf(desc, "@c Signature_Labels Sets the label for objects that match signature %d.", signum);
+	asprintf(id, "Signature label %d", signum);
+	asprintf(desc, "@c Signature_Labels Sets the label for objects that match signature %d.", signum);
 	strcpy(label2, label); // copy into new memory since chirp uses same memory for receiving and sending messages
 	if (prm_add(id, progFlags, PRM_PRIORITY_3, desc, STRING(label2), END)<0) // create if it doesn't exist
 		prm_set(id, STRING(label2), END); // if it's already there, set it...

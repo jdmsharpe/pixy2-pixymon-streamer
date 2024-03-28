@@ -23,7 +23,7 @@ int writePPM(uint16_t width, uint16_t height, uint32_t *image, const char *filen
   int i, j;
   char fn[32];
 
-  sprintf(fn, "%s.ppm", filename);
+  asprintf(fn, "%s.ppm", filename);
   FILE *fp = fopen(fn, "wb");
   if (fp==NULL)
     return -1;

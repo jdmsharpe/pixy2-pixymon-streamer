@@ -419,7 +419,7 @@ void LineModule::handlePVI0(uint8_t renderFlags, uint16_t width, uint16_t height
 
         if (intersectionDest)
         {
-            label.sprintf("%d-way intersection", intersectionDest);
+            label.asprintf("%d-way intersection", intersectionDest);
             drawPoint(0, pDest.x(), pDest.y(), label);
         }
     }

@@ -742,7 +742,7 @@ void Interpreter::run()
         if (m_version[0]!=VER_MAJOR || m_version[1]>VER_MINOR)
         {
             char buf[0x100];
-            sprintf(buf, "This Pixy's firmware version (%d.%d.%d) is not compatible with this PixyMon version (%d.%d.%d).",
+            asprintf(buf, "This Pixy's firmware version (%d.%d.%d) is not compatible with this PixyMon version (%d.%d.%d).",
                     m_version[0], m_version[1], m_version[2], VER_MAJOR, VER_MINOR, VER_BUILD);
             throw std::runtime_error(buf);
         }

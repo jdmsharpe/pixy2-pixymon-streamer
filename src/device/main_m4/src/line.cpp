@@ -329,8 +329,8 @@ int line_loadParams(int8_t progIndex)
 	
 		for (i=0; i<16; i++)
 		{
-			sprintf(id, "Barcode label %d", i);
-			sprintf(desc, "@c Barcode_Labels Sets the label for barcodes that match barcode pattern %d.", i);
+			asprintf(id, "Barcode label %d", i);
+			asprintf(desc, "@c Barcode_Labels Sets the label for barcodes that match barcode pattern %d.", i);
 			prm_add(id, PROG_FLAGS(progIndex), PRM_PRIORITY_3-i, desc, STRING(""), END);
 		}
 	}

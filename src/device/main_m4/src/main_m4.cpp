@@ -49,7 +49,7 @@ void __default_signal_handler(int signal, int type)
 {										   
 	char message[48];
 
-	sprintf(message, "received signal: %d %d\n", signal, type);
+	asprintf(message, "received signal: %d %d\n", signal, type);
 	showError(signal, 0xff0000, message);
 }
 		    

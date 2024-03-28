@@ -121,7 +121,7 @@ void CccModule::paramChange()
     // check to see if any signatures have changed
     for (i=0, setPalette=false; i<CL_NUM_SIGNATURES; i++)
     {
-        sprintf(id, "signature%d", i+1);
+        asprintf(id, "signature%d", i+1);
         if (pixyParameterChanged(id, &val))
         {
             ba = val.toByteArray();
@@ -261,7 +261,7 @@ void CccModule::renderBlobsA(bool blend, QImage *image, float scale, BlobA2 *blo
 
         }
         else if ((str=lookup(blobs[i].m_model))=="")
-            str = str.sprintf("s=%d", blobs[i].m_model);
+            str = str.asprintf("s=%d", blobs[i].m_model);
 
        Renderer::drawText(&p, x+w/2, y+h/2, str);
     }
@@ -304,7 +304,7 @@ void CccModule::renderBlobsC(bool blend, QImage *image, float scale, BlobC *blob
 
         }
         else if ((str=lookup(blobs[i].m_model))=="")
-            str = str.sprintf("s=%d", blobs[i].m_model);
+            str = str.asprintf("s=%d", blobs[i].m_model);
 
        Renderer::drawText(&p, x+w/2, y+h/2, str);
     }

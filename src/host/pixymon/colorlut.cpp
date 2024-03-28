@@ -438,14 +438,14 @@ void ColorLUT::matlabOut(const ColorModel *model)
     out << "function [HuePixels, Lines]=" << name << "()\n\n";
     out << "HuePixels=[\n";
     for (i=0; i<m_hpixelLen; i++)
-        out << str.sprintf("%d %d\n", m_hpixels[i].m_u, m_hpixels[i].m_v);
+        out << str.asprintf("%d %d\n", m_hpixels[i].m_u, m_hpixels[i].m_v);
 
     out << "];\n\n";
     out << "Lines=[\n";
-    out << str.sprintf("%f %f\n",  model->m_hue[0].m_slope,  model->m_hue[0].m_yi);
-    out << str.sprintf("%f %f\n",  model->m_hue[1].m_slope,  model->m_hue[1].m_yi);
-    out << str.sprintf("%f %f\n",  model->m_sat[0].m_slope,  model->m_sat[0].m_yi);
-    out << str.sprintf("%f %f\n",  model->m_sat[1].m_slope,  model->m_sat[1].m_yi);
+    out << str.asprintf("%f %f\n",  model->m_hue[0].m_slope,  model->m_hue[0].m_yi);
+    out << str.asprintf("%f %f\n",  model->m_hue[1].m_slope,  model->m_hue[1].m_yi);
+    out << str.asprintf("%f %f\n",  model->m_sat[0].m_slope,  model->m_sat[0].m_yi);
+    out << str.asprintf("%f %f\n",  model->m_sat[1].m_slope,  model->m_sat[1].m_yi);
     out << "];\n";
 
     file.close();
@@ -464,7 +464,7 @@ void ColorLUT::matlabOut()
     out << "function [LUT]=" << name << "()\n\n";
     out << "LUT=[\n";
     for (i=0; i<0x10000; i++)
-        out << str.sprintf("%d\n", m_lut[i]);
+        out << str.asprintf("%d\n", m_lut[i]);
 
     out << "];\n";
 

@@ -61,7 +61,7 @@ void loop()
     pixy.setServos(panLoop.m_command, tiltLoop.m_command);
    
 #if 0 // for debugging
-    sprintf(buf, "%ld %ld %ld %ld", rotateLoop.m_command, translateLoop.m_command, left, right);
+    asprintf(buf, "%ld %ld %ld %ld", rotateLoop.m_command, translateLoop.m_command, left, right);
     Serial.println(buf);   
 #endif
 

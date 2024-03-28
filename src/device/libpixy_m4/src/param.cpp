@@ -379,7 +379,7 @@ int32_t prm_setChirp(const char *id, const uint32_t &valLen, const uint8_t *val)
 		if (strncmp(id, "Signature label", 15)==0)
 		{
 			char desc[100];
-			sprintf(desc, "@c Signature_Labels Sets the label for objects that match signature%s.", id+15);
+			asprintf(desc, "@c Signature_Labels Sets the label for objects that match signature%s.", id+15);
 			prm_add(id, 0, PRM_PRIORITY_3, desc, val[0], val+1, END);
 			return 0;
 		}

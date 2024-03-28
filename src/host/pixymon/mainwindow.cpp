@@ -607,7 +607,7 @@ void MainWindow::on_actionAbout_triggered()
     AboutDialog *about;
     QString contents;
 
-    contents.sprintf("<b>%s v2 version %d.%d.%d</b><br>", PIXYMON_TITLE, VER_MAJOR, VER_MINOR, VER_BUILD);
+    contents.asprintf("<b>%s v2 version %d.%d.%d</b><br>", PIXYMON_TITLE, VER_MAJOR, VER_MINOR, VER_BUILD);
 
     if (m_interpreter)
     {
@@ -615,8 +615,8 @@ void MainWindow::on_actionAbout_triggered()
         uint16_t *version;
         version = m_interpreter->getVersion();
         fwtype = m_interpreter->getVersionType();
-        contents += fwver.sprintf("<b>Pixy2 firmware version %d.%d.%d ", version[0], version[1], version[2]) + fwtype + " build</b> (queried)<br>";
-        contents += fwver.sprintf("<b>Pixy2 hardware version %d.%d.%d</b> (queried)<br>", version[3], version[4], version[5]);
+        contents += fwver.asprintf("<b>Pixy2 firmware version %d.%d.%d ", version[0], version[1], version[2]) + fwtype + " build</b> (queried)<br>";
+        contents += fwver.asprintf("<b>Pixy2 hardware version %d.%d.%d</b> (queried)<br>", version[3], version[4], version[5]);
       }
 
     contents +=
@@ -843,7 +843,7 @@ void MainWindow::handleVersion(ushort major, ushort minor, ushort build, QString
         m_versionIncompatibility = true;
     }
     handleFirmware(major, minor, build, type, hwMajor, hwMinor, hwBuild);
-    //str = str.sprintf("Pixy firmware version %d.%d.%d.\n", major, minor, build);
+    //str = str.asprintf("Pixy firmware version %d.%d.%d.\n", major, minor, build);
     //m_console->print(str);
 }
 
@@ -853,7 +853,7 @@ void MainWindow::handleMouseLoc(int x, int y)
     if (x<0) // invalid coordinates
         m_statusRight->setText(""); // clear text
     else
-        m_statusRight->setText(text.sprintf("%d, %d", x, y));
+        m_statusRight->setText(text.asprintf("%d, %d", x, y));
 }
 
 
