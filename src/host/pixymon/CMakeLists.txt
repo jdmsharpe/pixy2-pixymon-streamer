@@ -79,18 +79,18 @@ set(HEADERS
     flash.h
     interpreter.h
     linemodule.h
-    link.h
+    ../../common/inc/link.h
     mainwindow.h
     monmodule.h
     monparameterdb.h
     paramfile.h
     parameters.h
-    pixydefs.h
+    ../../common/inc/pixydefs.h
     pixymon.h
-    pixytypes.h
+    ../../common/inc/pixytypes.h
     reader.h
     renderer.h
-    simplevector.h
+    ../../common/inc/simplevector.h
     sleeper.h
     usb_dfu.h
     usblink.h
