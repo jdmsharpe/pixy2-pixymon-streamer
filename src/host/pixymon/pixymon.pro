@@ -6,6 +6,7 @@
 
 QT += core gui widgets xml
 QT += network
+QT += httpserver
 
 TARGET = PixyMon
 TEMPLATE = app
