@@ -112,7 +112,7 @@ void CccModule::paramChange()
 {
     int i;
     QVariant val;
-    char** id;
+    char* id;
     uint32_t sigLen;
     uint8_t *sigData;
     QByteArray ba;
@@ -121,8 +121,8 @@ void CccModule::paramChange()
     // check to see if any signatures have changed
     for (i=0, setPalette=false; i<CL_NUM_SIGNATURES; i++)
     {
-        asprintf(id, "signature%d", i+1);
-        if (pixyParameterChanged(*id, &val))
+        asprintf(&id, "signature%d", i+1);
+        if (pixyParameterChanged(id, &val))
         {
             ba = val.toByteArray();
             Chirp::deserialize((uint8_t *)ba.data(), val.toByteArray().size(), &sigLen, &sigData, END);
