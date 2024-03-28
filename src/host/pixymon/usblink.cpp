@@ -143,12 +143,12 @@ int USBLink::receive(uint8_t *data, uint32_t len, uint16_t timeoutMs)
 
 void USBLink::setTimer()
 {
-    m_time.start();
+    m_timer.start();
 }
 
 uint32_t USBLink::getTimer()
 {
-    return m_time.elapsed();
+    return m_timer.elapsed();
 }
 
 
