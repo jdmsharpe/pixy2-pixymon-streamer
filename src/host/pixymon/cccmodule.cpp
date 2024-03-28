@@ -147,11 +147,11 @@ void CccModule::paramChange()
     {
         if (params[i].id().startsWith("Signature label"))
         {
-            words = params[i].id().split(QRegExp("\\s+"));
+            words = params[i].id().split(QRegularExpression("\\s+"));
             if (words.length()<3) // bogus!
                 continue;
             signum = words[2].toUInt();
-            m_labels.push_back(QPair<uint16_t, QString>(convert10to8(signum), params[i].value().toString().remove(QRegExp("^\\s+")))); // remove leading whitespace
+            m_labels.push_back(QPair<uint16_t, QString>(convert10to8(signum), params[i].value().toString().remove(QRegularExpression("^\\s+")))); // remove leading whitespace
         }
     }
 }

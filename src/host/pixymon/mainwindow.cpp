@@ -130,7 +130,7 @@ void MainWindow::parseCommandline(int argc, char *argv[])
         {
             i++;
             m_argvFirmwareFile = argv[i];
-            m_argvFirmwareFile.remove(QRegExp("[\"']"));
+            m_argvFirmwareFile.remove(QRegularExpression("[\"']"));
         }
         else if (!strcmp("-initscript", argv[i]) && i+1<argc)
         {
@@ -143,7 +143,7 @@ void MainWindow::parseCommandline(int argc, char *argv[])
         {
             i++;
             m_pixyflash = argv[i];
-            m_pixyflash.remove(QRegExp("[\"']"));
+            m_pixyflash.remove(QRegularExpression("[\"']"));
         }
     }
 }

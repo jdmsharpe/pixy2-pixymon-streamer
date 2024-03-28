@@ -450,11 +450,11 @@ void LineModule::paramChange()
     {
         if (params[i].id().startsWith("Barcode label"))
         {
-            words = params[i].id().split(QRegExp("\\s+"));
+            words = params[i].id().split(QRegularExpression("\\s+"));
             if (words.length()<3) // bogus!
                 continue;
             barcodeNum = words[2].toUInt();
-            m_labels.push_back(QPair<uint16_t, QString>(barcodeNum, params[i].value().toString().remove(QRegExp("^\\s+")))); // remove leading whitespace
+            m_labels.push_back(QPair<uint16_t, QString>(barcodeNum, params[i].value().toString().remove(QRegularExpression("^\\s+")))); // remove leading whitespace
         }
     }
 }

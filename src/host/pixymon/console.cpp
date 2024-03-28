@@ -118,7 +118,7 @@ void ConsoleWidget::print(QString text, uint flags)
 
 void ConsoleWidget::command(QString text)
 {
-    text.remove(QRegExp("^\\s+")); // remove leading whitespace
+    text.remove(QRegularExpression("^\\s+")); // remove leading whitespace
     if (text=="")
         return;
     prompt();
@@ -221,8 +221,8 @@ void ConsoleWidget::keyPressEvent(QKeyEvent *event)
             line = cursor.block().text();
 
             line.remove(0, m_prompt.size()); // get rid of prompt
-            line.remove(QRegExp("^\\s+")); //remove leading whitespace
-            line.remove(QRegExp("\\s+$")); //remove trailing whitespace
+            line.remove(QRegularExpression("^\\s+")); //remove leading whitespace
+            line.remove(QRegularExpression("\\s+$")); //remove trailing whitespace
             // propagate newline before we send text
             QPlainTextEdit::keyPressEvent(event);
             m_timer.start();

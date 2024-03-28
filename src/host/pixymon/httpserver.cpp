@@ -30,7 +30,7 @@ void HttpServer::handleRequest(QHttpRequest *req, QHttpResponse *resp)
     Q_UNUSED(req);
 
     QString reqPath = req->path();
-    reqPath.remove(QRegExp("^[/]*"));
+    reqPath.remove(QRegularExpression("^[/]*"));
 
     qDebug() << reqPath;
 

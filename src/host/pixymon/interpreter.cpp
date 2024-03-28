@@ -33,7 +33,7 @@ Interpreter::Interpreter(ConsoleWidget *console, VideoWidget *video, MonParamete
     m_mutexProg(QMutex::Recursive)
 {
     m_initScript = initScript;
-    m_initScript.remove(QRegExp("^\\s+"));  // remove initial whitespace
+    m_initScript.remove(QRegularExpression("^\\s+"));  // remove initial whitespace
     m_console = console;
     m_video = video;
     m_pixymonParameters = data;
@@ -204,7 +204,7 @@ QStringList Interpreter::parseScriptlet(const QString &scriptlet)
         // the backslash followed by the n character, which the c-compiler will always substitute CR character
         return scriptlet.split(QString("\\") + "n", Qt::SkipEmptyParts);
     else
-        return scriptlet.split(QRegExp("[\\n]"), Qt::SkipEmptyParts);
+        return scriptlet.split(QRegularExpression("[\\n]"), Qt::SkipEmptyParts);
 }
 
 QStringList Interpreter::getSections(const QString &id, const QString &string)
@@ -226,11 +226,11 @@ QStringList Interpreter::getSections(const QString &id, const QString &string)
 
         if (section=="@" || section=="")
             break;
-        words = section.split(QRegExp("\\s+"));
+        words = section.split(QRegularExpression("\\s+"));
         if (words[0].contains(id))
         {
             section.remove(words[0]); // remove id
-            section.remove(QRegExp("^\\s+")); // remove leading whitespace
+            section.remove(QRegularExpression("^\\s+")); // remove leading whitespace
             sections << section;
         }
     }
@@ -252,12 +252,12 @@ int Interpreter::getArgs(const ProcInfo *info, ArgList *argList)
     {
         if (i<sections.size())
         {
-            words = sections[i].split(QRegExp("\\s+"));
+            words = sections[i].split(QRegularExpression("\\s+"));
             label = words[0];
             desc = sections[i];
-            desc.remove(QRegExp("^\\s+")); // remove leading whitespace
-            desc.remove(QRegExp("^" + label)); // remove id
-            desc.remove(QRegExp("^\\s+")); // remove leading whitespace
+            desc.remove(QRegularExpression("^\\s+")); // remove leading whitespace
+            desc.remove(QRegularExpression("^" + label)); // remove id
+            desc.remove(QRegularExpression("^\\s+")); // remove leading whitespace
             argList->push_back(Arg(label, desc));
             // if argument is a type hint, we need to skip the 4-byte (32-bit) int, error if we run out of args
             if (info->argTypes[i]==CRP_TYPE_HINT &&
@@ -784,7 +784,7 @@ void Interpreter::run()
     m_timer.start();
     getRunning();
     paramScriptlet = m_pixymonParameters->value("Pixy start command").toString();
-    paramScriptlet.remove(QRegExp("^\\s+")); // remove initial whitespace
+    paramScriptlet.remove(QRegularExpression("^\\s+")); // remove initial whitespace
     handleLoadParams(true); // load params upon initialization
     if (m_initScript!="")
         execute(parseScriptlet(m_initScript));
@@ -922,12 +922,12 @@ void Interpreter::command(const QString &command, bool interactive)
     if (m_localProgramRunning)
         return;
 
-    QStringList words = command.split(QRegExp("[\\s(),\\t]"), Qt::SkipEmptyParts);
+    QStringList words = command.split(QRegularExpression("[\\s(),\\t]"), Qt::SkipEmptyParts);
 
     if (m_waiting)
     {
         m_command = command;
-        m_command.remove(QRegExp("[(),\\t]"));
+        m_command.remove(QRegularExpression("[(),\\t]"));
         m_key = (Qt::Key)0;
         m_selection = RectA(0, 0, 0, 0);
         m_waitInput.wakeAll();
@@ -999,7 +999,7 @@ void Interpreter::execute(QString comm)
     if (m_localProgramRunning)
         queueCommand(STOP_LOCAL);
 
-    comm.remove(QRegExp("^\\s+")); // remove leading whitespace
+    comm.remove(QRegularExpression("^\\s+")); // remove leading whitespace
     if (comm!="")
         command(comm, false);
 }
@@ -1152,7 +1152,7 @@ int Interpreter::call(const QStringList &argv, bool interactive)
 
                     if (m_key==Qt::Key_Escape)
                         goto end;
-                    cargv << m_command.split(QRegExp("\\s+"));
+                    cargv << m_command.split(QRegularExpression("\\s+"));
                 }
                 // call ourselves again, now that we have all the args
                 res = call(cargv);
@@ -1289,13 +1289,13 @@ void Interpreter::augmentProcInfo(ProcInfo *info)
 QString Interpreter::extractProperty(const QString &tag, QString *desc)
 {
     QString property;
-    QStringList words = desc->split(QRegExp("\\s+"));
+    QStringList words = desc->split(QRegularExpression("\\s+"));
 
     int i = words.indexOf(tag);
     if (i>=0 && words.size()>i+1)
     {
         property = words[i+1];
-        *desc = desc->remove(QRegExp(tag + "\\s+" + property + "\\s*")); // remove from description
+        *desc = desc->remove(QRegularExpression(tag + "\\s+" + property + "\\s*")); // remove from description
 
         return property;
     }
