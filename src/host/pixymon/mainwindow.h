@@ -48,6 +48,8 @@ public:
     explicit MainWindow(int argc, char *argv[], QWidget *parent = 0);
     ~MainWindow();
 
+    Interpreter *interpreter() { return m_interpreter; }
+
     friend class VideoWidget;
     friend class ConsoleWidget;
 
@@ -67,7 +69,6 @@ private slots:
     void handleParamChange();
     void handleConfigDialogFinished();
     void handleMouseLoc(int x, int y);
-    Interpreter *interpreter() { return m_interpreter; }
     void interpreterFinished();
     void handleVersion(ushort major, ushort minor, ushort build, QString type, ushort hwMajor, ushort hwMinor, ushort hwBuild);
     void on_actionAbout_triggered();
