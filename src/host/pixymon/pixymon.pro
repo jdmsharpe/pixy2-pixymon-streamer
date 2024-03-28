@@ -34,7 +34,8 @@ SOURCES += main.cpp\
     monparameterdb.cpp \
     cccmodule.cpp \
     debug.cpp \
-    linemodule.cpp
+    linemodule.cpp \
+    httpserver.cpp
 
 HEADERS  += mainwindow.h \
     videowidget.h \
@@ -66,7 +67,8 @@ HEADERS  += mainwindow.h \
     monparameterdb.h \
     cccmodule.h \
     debug.h \
-    linemodule.h
+    linemodule.h \
+    httpserver.h
 
 INCLUDEPATH += ../../common/inc
 
