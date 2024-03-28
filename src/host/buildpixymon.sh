@@ -14,7 +14,6 @@ echo Building for $platform
 cd src/host/pixymon
 
 if [[ "$platform" == 'linux' ]]; then
-   qmake pixymon.pro
    make -w
    cd ../../..
    cp src/host/pixymon/PixyMon .
@@ -27,7 +26,6 @@ if [[ "$platform" == 'linux' ]]; then
 fi
 
 if [[ "$platform" == 'mac' ]]; then
-   qmake pixymon.pro
    make -w
    cd ../../..
    cp -rf src/host/pixymon/PixyMon.app .
