@@ -18,8 +18,9 @@
 #include "cameravals.h"
 #include "chirp.hpp"
 
-
 #include "blobs.h"
+
+#include <algorithm>
 
 #define CC_SIGNATURE(s) (m_ccMode==CC_ONLY || m_clut.getType(s)==CL_MODEL_TYPE_COLORCODE)
 
@@ -530,7 +531,7 @@ int Blobs::getBlobs(uint8_t sigmap, uint8_t n, uint8_t *buf, uint16_t len)
 	}
 
 	// sort blobs by area
-	qsort(retBlobs, bi, sizeof(BlobC), compAreaBlobC);
+	std::sort(retBlobs, bi, sizeof(BlobC), compAreaBlobC);
 	m_blobReadIndex = 1; // flag that we "gotBlobs"
 	
 	// note, we need to create a decently-long list so we can sort (above) and then return the n biggest
@@ -1336,7 +1337,7 @@ void Blobs::reloadBlobs()
 			}
 		}
 		// sort blocks for that signature, or CC
-		qsort(&m_blobs[bi-si], si, sizeof(BlobA), compAreaBlobA);
+		std::sort(&m_blobs[bi-si], si, sizeof(BlobA), compAreaBlobA);
 
 		// exit early?
 		if (bi>=n)

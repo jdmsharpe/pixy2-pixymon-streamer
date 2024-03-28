@@ -18,6 +18,8 @@
 #include "parameters.h"
 #include <QDebug>
 
+#include <algorithm>
+
 Parameter::Parameter(const QString &id, PType type, const QString &help)
 {
     m_id = id;
@@ -366,6 +368,6 @@ bool compParameter(const Parameter &a, const Parameter &b)
 void ParameterDB::sort()
 {
     QMutexLocker locker(&m_mutex);
-    qSort(m_parameters.begin(), m_parameters.end(), compParameter);
+    std::sort(m_parameters.begin(), m_parameters.end(), compParameter);
 }
 

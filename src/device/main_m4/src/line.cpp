@@ -33,6 +33,8 @@
 #include "calc.h"
 #include "simplelist.h"
 
+#include <algorithm>
+
 #define ABS(x)      ((x)<0 ? -(x) : (x))
 #define SIGN(x)     ((x)>=0 ? 1 : -1)
 
@@ -2160,7 +2162,7 @@ bool decodeCode(BarCode *bc)
 		edges[i] = bc->m_edges[i];
 	
 	// sort 
-	qsort(edges, bc->m_n, sizeof(uint8_t), comp8);
+	std::sort(edges, bc->m_n, sizeof(uint8_t), comp8);
 	
 	// find biggest gap
 	for (i=0, maxGap=0; i<bc->m_n-1; i++)
@@ -2753,7 +2755,7 @@ void formatIntersection(const Intersection &intersection, FrameIntersection *fin
 	fintersection->m_n = j;
 	
 	// sort lines based on angles
-	qsort(fintersection->m_lines, fintersection->m_n, sizeof(FrameIntersectionLine), compareAngle);
+	std::sort(fintersection->m_lines, fintersection->m_n, sizeof(FrameIntersectionLine), compareAngle);
 }
 
 

@@ -33,6 +33,8 @@
 #include "led.h"
 #include "simplelist.h"
 
+#include <algorithm>
+
 
 #define LOOP_STATE  1
 //#define DEBUG_SERVO
@@ -293,7 +295,7 @@ int compProgNames(const void *a, const void *b)
 int exec_init(Chirp *chirp)
 {
 	// sort program table by program name so the results are predictable
-	qsort(ProgTableUtil::m_progTable, ProgTableUtil::m_progTableIndex, sizeof(ProgTableEntry), compProgNames);
+	std::sort(ProgTableUtil::m_progTable, ProgTableUtil::m_progTableIndex, sizeof(ProgTableEntry), compProgNames);
 	
 	chirp->registerModule(g_module);
 
