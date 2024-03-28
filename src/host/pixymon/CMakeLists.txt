@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(PixyMon)
 
 # Find the Qt6 library components
-find_package(Qt6 COMPONENTS Core Gui Widgets Xml Network REQUIRED)
+find_package(Qt6 COMPONENTS Core Core5Compat Gui Widgets Xml Network HttpServer REQUIRED)
 
 # Enable C++11
 set(CMAKE_CXX_STANDARD 11)
@@ -120,7 +120,7 @@ qt6_add_resources(RCC_WRAPPERS ${RESOURCES})
 add_executable(${PROJECT_NAME} ${SOURCES} ${MOC_WRAPPERS} ${UI_WRAPPERS} ${RCC_WRAPPERS})
 
 # Link against Qt6 libraries
-target_link_libraries(${PROJECT_NAME} Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Xml Qt6::Network)
+target_link_libraries(${PROJECT_NAME} Qt6::Core Qt::Core5Compat Qt6::Gui Qt6::Widgets Qt6::Xml Qt6::Network Qt6::HttpServer)
 
 # Platform-specific libraries
 if(WIN32)
