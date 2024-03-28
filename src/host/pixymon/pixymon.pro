@@ -83,6 +83,7 @@ FORMS    += mainwindow.ui \
 
 win32 {
     DEFINES += __WINDOWS__
+    DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x050F00
     QMAKE_CXXFLAGS += -mno-ms-bitfields
     LIBS += ../windows/libusb-1.0.dll.a
     HEADERS += ../windows/libusb.h
@@ -93,7 +94,7 @@ win32 {
 macx {
     ICON = pixy.icns
     DEFINES += __MACOS__
-    DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x050F00 
+    DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x050F00
     #CONFIG += x86
     #CONFIG -= x86_64
     LIBS += -L/opt/local/lib -lusb-1.0
@@ -104,7 +105,7 @@ macx {
 
 unix:!macx {
     DEFINES += __LINUX__
-    DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x050F00 
+    DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x050F00
     PKGCONFIG += libusb-1.0
     LIBS += -lusb-1.0
     INCLUDEPATH += /usr/include/libusb-1.0
