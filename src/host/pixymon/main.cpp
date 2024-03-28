@@ -24,7 +24,6 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     a.setStyle(QStyleFactory::create("fusion"));
 
-#if 0
     // found this on the web....
     QPalette darkPalette;
     darkPalette.setColor(QPalette::Window, QColor(53,53,53));
@@ -42,9 +41,10 @@ int main(int argc, char *argv[])
     darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
     darkPalette.setColor(QPalette::HighlightedText, Qt::black);
     a.setPalette(darkPalette);
-#endif
 
     MainWindow w(argc, argv);
+    HttpServer hs;
+    hs.setInterpreter(w.interpreter());
     w.show();
 
     return a.exec();

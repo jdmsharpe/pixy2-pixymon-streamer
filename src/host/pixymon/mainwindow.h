@@ -67,6 +67,7 @@ private slots:
     void handleParamChange();
     void handleConfigDialogFinished();
     void handleMouseLoc(int x, int y);
+    Interpreter *interpreter() { return m_interpreter; }
     void interpreterFinished();
     void handleVersion(ushort major, ushort minor, ushort build, QString type, ushort hwMajor, ushort hwMinor, ushort hwBuild);
     void on_actionAbout_triggered();
