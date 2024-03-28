@@ -76,9 +76,9 @@ ConfigDialog::~ConfigDialog()
     // reset all PP_WIDGET properties because these are used to indicate whether we've created
     // the corresponding gui elements.
     for (i=0; i<monParameters.size(); i++)
-        monParameters[i].setProperty(PP_WIDGET, qVariantFromValue((void *)0));
+        monParameters[i].setProperty(PP_WIDGET, QVariant::fromValue((void *)0));
     for (i=0; i<pixyParameters.size(); i++)
-        pixyParameters[i].setProperty(PP_WIDGET, qVariantFromValue((void *)0));
+        pixyParameters[i].setProperty(PP_WIDGET, QVariant::fromValue((void *)0));
 
     // update video widget
     m_interpreter->m_video->setupDialog(NULL);
@@ -329,7 +329,7 @@ void ConfigDialog::render(ParameterDB *data, QTabWidget *tabs)
             line->setMinimumWidth(50);
             line->setMaximumWidth(75);
             line->setToolTip(parameter.help());
-            parameter.setProperty(PP_WIDGET,  qVariantFromValue((void *)line));
+            parameter.setProperty(PP_WIDGET,  QVariant::fromValue((void *)line));
         }
         else
             line = (QLineEdit *)parameter.property(PP_WIDGET).value<void *>();
@@ -341,7 +341,7 @@ void ConfigDialog::render(ParameterDB *data, QTabWidget *tabs)
                 if (!created)
                 {
                     button = new QPushButton("Change...");
-                    button->setProperty("Parameter",  qVariantFromValue((void *)&parameter));
+                    button->setProperty("Parameter",  QVariant::fromValue((void *)&parameter));
                     connect(button, SIGNAL(clicked()), this, SLOT(handleChangeClicked()));
                     button->setToolTip("Select a new path");
                     line->setMinimumWidth(200);
@@ -354,10 +354,10 @@ void ConfigDialog::render(ParameterDB *data, QTabWidget *tabs)
                 if (!created)
                 {
                     cbox = new QCheckBox();
-                    cbox->setProperty("Parameter",  qVariantFromValue((void *)&parameter));
+                    cbox->setProperty("Parameter",  QVariant::fromValue((void *)&parameter));
                     cbox->setToolTip(parameter.help());
                     connect(cbox, SIGNAL(clicked()), this, SLOT(handleCheckBox()));
-                    parameter.setProperty(PP_WIDGET,  qVariantFromValue((void *)cbox));
+                    parameter.setProperty(PP_WIDGET,  QVariant::fromValue((void *)cbox));
                     delete line;
                     line = NULL;
                 }
@@ -370,13 +370,13 @@ void ConfigDialog::render(ParameterDB *data, QTabWidget *tabs)
                 if (!created)
                 {
                     slider = new QSlider(Qt::Horizontal);
-                    slider->setProperty("Parameter",  qVariantFromValue((void *)&parameter));
+                    slider->setProperty("Parameter",  QVariant::fromValue((void *)&parameter));
                     slider->setMinimumWidth(SLIDER_SIZE);
                     slider->setMaximumWidth(SLIDER_SIZE);
                     slider->setRange(0, SLIDER_SIZE);
                     slider->setSingleStep(1);
                     slider->setToolTip(parameter.help());
-                    parameter.setProperty(PP_WIDGET2,  qVariantFromValue((void *)slider));
+                    parameter.setProperty(PP_WIDGET2,  QVariant::fromValue((void *)slider));
                     connect(slider, SIGNAL(valueChanged(int)), this, SLOT(handleSlider()));
                 }
                 else
@@ -414,11 +414,11 @@ void ConfigDialog::render(ParameterDB *data, QTabWidget *tabs)
                 if (!created)
                 {
                     sbox = new QComboBox();
-                    sbox->setProperty("Parameter",  qVariantFromValue((void *)&parameter));
+                    sbox->setProperty("Parameter",  QVariant::fromValue((void *)&parameter));
                     for (j=0; j<rvs.length(); j++)
                         sbox->addItem(rvs[j].m_description, rvs[j].m_value);
                     sbox->setToolTip(parameter.help());
-                    parameter.setProperty(PP_WIDGET2,  qVariantFromValue((void *)sbox));
+                    parameter.setProperty(PP_WIDGET2,  QVariant::fromValue((void *)sbox));
                     connect(sbox, SIGNAL(activated(int)), this, SLOT(handleComboBox(int)));
                     delete line;
                     line = NULL;
