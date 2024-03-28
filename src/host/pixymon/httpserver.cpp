@@ -5,6 +5,8 @@
 #include <QFileInfo>
 #include <QCoreApplication>
 #include <QHttpServer>
+#include <QHttpServerRequest>
+#include <QHttpServerResponder>
 #include <QRegularExpression>
 
 #include "interpreter.h"
@@ -15,8 +17,8 @@ HttpServer::HttpServer()
 {
     m_interpreter = NULL;
     m_server = new QHttpServer(this);
-    connect(m_server, SIGNAL(newRequest(QHttpRequest*, QHttpResponse*)),
-            this, SLOT(handleRequest(QHttpRequest*, QHttpResponse*)));
+    connect(m_server, SIGNAL(newRequest(QHttpServerRequest*, QHttpServerResponder*)),
+            this, SLOT(handleRequest(QHttpServerRequest*, QHttpServerResponder*)));
 
     m_server->listen(QHostAddress::Any, 8080);
 }
@@ -26,7 +28,7 @@ HttpServer::~HttpServer()
     delete m_server;
 }
 
-void HttpServer::handleRequest(QHttpRequest *req, QHttpResponse *resp)
+void HttpServer::handleRequest(QHttpServerRequest *req, QHttpServerResponder *resp)
 {
     Q_UNUSED(req);
 
