@@ -4,8 +4,8 @@
 #include <QObject>
 
 class QHttpServer;
-class QHttpRequest;
-class QHttpResponse;
+class QHttpServerRequest;
+class QHttpServerResponse;
 class Interpreter;
 
 class HttpServer : public QObject
@@ -22,7 +22,7 @@ public:
     }
 
 private slots:
-    void handleRequest(QHttpRequest *req, QHttpResponse *resp);
+    void handleRequest(QHttpServerRequest *req, QHttpServerResponse *resp);
 
 private:
     QHttpServer *m_server;
