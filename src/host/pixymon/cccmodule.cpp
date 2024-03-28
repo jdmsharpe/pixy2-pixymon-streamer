@@ -121,7 +121,7 @@ void CccModule::paramChange()
     // check to see if any signatures have changed
     for (i=0, setPalette=false; i<CL_NUM_SIGNATURES; i++)
     {
-        asprintf(id, "signature%d", i+1);
+        asprintf(&id, "signature%d", i+1);
         if (pixyParameterChanged(id, &val))
         {
             ba = val.toByteArray();
