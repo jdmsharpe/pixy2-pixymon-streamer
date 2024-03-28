@@ -28,7 +28,7 @@
 #include <QString>
 #include <QVariant>
 #include <QList>
-#include <QMutex>
+#include <QRecursiveMutex>
 
 #define PP_CATEGORY     "category"
 #define PP_WIDGET       "widget"
@@ -142,13 +142,13 @@ public:
 
     void sort();
 
-    QMutex *mutex()
+    QRecursiveMutex *mutex()
     {
         return &m_mutex;
     }
 
 protected:
-    QMutex m_mutex;
+    QRecursiveMutex m_mutex;
     Parameters m_parameters;
 };
 

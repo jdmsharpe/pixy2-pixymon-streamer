@@ -18,6 +18,7 @@
 #include <QThread>
 #include <QWaitCondition>
 #include <QMutex>
+#include <QRecursiveMutex>
 #include <QStringList>
 #include <QColor>
 #include <QVariant>
@@ -207,7 +208,7 @@ private:
     USBLink m_link;
 
     // for thread
-    QMutex m_mutexProg;
+    QRecursiveMutex m_mutexProg;
     QMutex m_mutexInput;
     QMutex m_mutexQueue;
     QWaitCondition m_waitInput;

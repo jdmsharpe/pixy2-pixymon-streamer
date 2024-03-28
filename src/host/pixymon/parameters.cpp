@@ -14,7 +14,6 @@
 //
 
 #include <QMutexLocker>
-#include <QRecursiveMutex>
 #include <stdexcept>
 #include "parameters.h"
 #include <QDebug>
@@ -248,7 +247,7 @@ QVariant Parameter::property(const QString &label) const
 }
 
 
-ParameterDB::ParameterDB() : m_mutex(QRecursiveMutex())
+ParameterDB::ParameterDB()
 {
 }
 
