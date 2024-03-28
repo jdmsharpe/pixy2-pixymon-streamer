@@ -22,6 +22,7 @@
 #include <QColor>
 #include <QVariant>
 #include <QList>
+#include <QElapsedTimer>
 #include <vector>
 #include <utility>
 #include "pixytypes.h"
@@ -251,6 +252,8 @@ private:
     QString m_versionType;
     QString m_initScript;
     QString m_status;
+
+    QElapsedTimer m_timer;
 };
 
 

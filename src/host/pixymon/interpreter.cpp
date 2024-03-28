@@ -16,7 +16,6 @@
 #include <stdexcept>
 #include <QFile>
 #include "debug.h"
-#include <QTime>
 #include <stdarg.h>
 #include "interpreter.h"
 #include "disconnectevent.h"
@@ -459,7 +458,7 @@ int Interpreter::sendRun()
 int Interpreter::sendStop()
 {
     int res, response;
-    QElapsedTimer time;
+    QTime time;
 
     m_fastPoll = true;
 
@@ -675,7 +674,6 @@ void Interpreter::getProgs()
 void Interpreter::run()
 {
     int res;
-    QElapsedTimer time;
     QString paramScriptlet;
 
     // init
@@ -742,7 +740,7 @@ void Interpreter::run()
         if (m_version[0]!=VER_MAJOR || m_version[1]>VER_MINOR)
         {
             char buf[0x100];
-            asprintf(buf, "This Pixy's firmware version (%d.%d.%d) is not compatible with this PixyMon version (%d.%d.%d).",
+            sprintf(buf, "This Pixy's firmware version (%d.%d.%d) is not compatible with this PixyMon version (%d.%d.%d).",
                     m_version[0], m_version[1], m_version[2], VER_MAJOR, VER_MINOR, VER_BUILD);
             throw std::runtime_error(buf);
         }
@@ -784,7 +782,7 @@ void Interpreter::run()
     }
     DBG("*** init done");
 
-    time.start();
+    m_timer.start();
     getRunning();
     paramScriptlet = m_pixymonParameters->value("Pixy start command").toString();
     paramScriptlet.remove(QRegExp("^\\s+")); // remove initial whitespace
@@ -799,11 +797,11 @@ void Interpreter::run()
     {
         // poll to see if we're still connected
         if (!m_programming &&
-                ((m_fastPoll && time.elapsed()>RUN_POLL_PERIOD_FAST) ||
-                (!m_fastPoll && time.elapsed()>RUN_POLL_PERIOD_SLOW)))
+                ((m_fastPoll && m_timer.elapsed()>RUN_POLL_PERIOD_FAST) ||
+                (!m_fastPoll && m_timer.elapsed()>RUN_POLL_PERIOD_SLOW)))
         {
             getRunning();
-            time.start();
+            m_timer.start();
         }
         // service chirps -- but if we're running a local program it just slows things down
         else if (!m_localProgramRunning)

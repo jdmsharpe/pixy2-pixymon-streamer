@@ -17,7 +17,7 @@
 #define _USBLINK_H
 
 #include <link.h>
-#include <QTime>
+#include <QElapsedTimer>
 #include "libusb.h"
 
 class USBLink : public Link
@@ -37,7 +37,7 @@ private:
     int openDevice();
     libusb_context *m_context;
     libusb_device_handle *m_handle;
-    QElapsedTimer m_time;
+    QElapsedTimer m_timer;
 };
 #endif
 
