@@ -98,13 +98,13 @@ int Chirp::setLink(Link *link)
     else
         m_headerLen = 8;  // type (uint8_t), (pad), proc (uint16_t), len (uint32_t)
 
-    if (m_sharedMem)
-    {
-		delete [] m_buf;
-        m_buf = (uint8_t *)m_link->getFlags(LINK_FLAG_INDEX_SHARED_MEMORY_LOCATION);
-        m_bufSize = m_link->getFlags(LINK_FLAG_INDEX_SHARED_MEMORY_SIZE);
+    if (m_sharedMem) {
+      delete[] m_buf;
+      m_buf = reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(
+          m_link->getFlags(LINK_FLAG_INDEX_SHARED_MEMORY_LOCATION)));
+      m_bufSize = m_link->getFlags(LINK_FLAG_INDEX_SHARED_MEMORY_SIZE);
     }
-	
+
     // link is set up, need to call init
     if (m_client) {
       return_value = remoteInit(true);

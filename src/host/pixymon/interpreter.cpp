@@ -1178,7 +1178,7 @@ int Interpreter::call(const QStringList &argv, bool interactive)
                         base = 16;
                     else
                         base = 10;
-                    args[i] = (void *)argv[i+1].toInt(&ok, base);
+                    args[i] = reinterpret_cast<void*>(static_cast<intptr_t>(argv[i+1].toInt(&ok, base)));
                     if (!ok)
                     {
                         emit error("argument didn't parse.\n");
