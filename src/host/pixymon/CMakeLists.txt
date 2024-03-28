@@ -67,8 +67,6 @@ set(SOURCES
 # Header files that require MOC processing
 set(MOC_HEADERS
     aboutdialog.h
-    cccmodule.h
-    chirpmon.h
     configdialog.h
     connectevent.h
     console.h
@@ -81,6 +79,8 @@ set(MOC_HEADERS
 
 # Header files without MOC requirements
 set(HEADERS
+    cccmodule.h
+    chirpmon.h
     dataexport.h
     debug.h
     dfu.h
