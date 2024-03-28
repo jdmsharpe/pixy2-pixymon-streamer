@@ -15,6 +15,7 @@
 
 #include <stdexcept>
 #include <QFile>
+#include <QRecursiveMutex>
 #include <QRegularExpression>
 #include "debug.h"
 #include <stdarg.h>
@@ -31,7 +32,7 @@
 QString printType(uint32_t val, bool parens=false);
 
 Interpreter::Interpreter(ConsoleWidget *console, VideoWidget *video, MonParameterDB *data, const QString &initScript) :
-    m_mutexProg(QMutex::Recursive)
+    m_mutexProg(QRecursiveMutex())
 {
     m_initScript = initScript;
     m_initScript.remove(QRegularExpression("^\\s+"));  // remove initial whitespace

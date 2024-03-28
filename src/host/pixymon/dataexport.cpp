@@ -102,13 +102,13 @@ void DataExport::addElement(QVariant element)
     {
         if (m_delimiter)
             *m_stream << ", ";
-        if (element.type()==(QVariant::Type)QMetaType::Float)
+        if (element.typeId()==(QVariant::Type)QMetaType::Float)
             *m_stream << element.toFloat();
-        else if (element.type()==QVariant::Double)
+        else if (element.typeId()==QVariant::Double)
             *m_stream << element.toDouble();
-        else if (element.type()==QVariant::Int)
+        else if (element.typeId()==QVariant::Int)
             *m_stream << element.toInt();
-        else if (element.type()==QVariant::UInt)
+        else if (element.typeId()==QVariant::UInt)
             *m_stream << element.toUInt();
         m_col++;
         if (m_col==m_width)
