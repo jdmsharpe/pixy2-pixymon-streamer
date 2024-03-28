@@ -459,7 +459,7 @@ int Interpreter::sendRun()
 int Interpreter::sendStop()
 {
     int res, response;
-    QTime time;
+    QElapsedTimer time;
 
     m_fastPoll = true;
 
@@ -675,7 +675,7 @@ void Interpreter::getProgs()
 void Interpreter::run()
 {
     int res;
-    QTime time;
+    QElapsedTimer time;
     QString paramScriptlet;
 
     // init

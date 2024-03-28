@@ -37,7 +37,7 @@ private:
     int openDevice();
     libusb_context *m_context;
     libusb_device_handle *m_handle;
-    QTime m_time;
+    QElapsedTimer m_time;
 };
 #endif
 
