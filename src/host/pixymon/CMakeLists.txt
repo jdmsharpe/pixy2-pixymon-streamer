@@ -46,6 +46,7 @@ set(SOURCES
     debug.cpp
     dfu.cpp
     flash.cpp
+    httpserver.cpp
     interpreter.cpp
     linemodule.cpp
     main.cpp
@@ -76,6 +77,7 @@ set(HEADERS
     dfu.h
     dfu_info.h
     flash.h
+    httpserver.h
     interpreter.h
     linemodule.h
     mainwindow.h
