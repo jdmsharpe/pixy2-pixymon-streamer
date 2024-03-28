@@ -91,7 +91,7 @@ int MonParameterDB::load()
 void MonParameterDB::addSlider(const QString &id, const QVariant &value, const QVariant &min, const QVariant &max,
                                const QString &help, const QString &category)
 {
-    if (value.type()==(QVariant::Type)QMetaType::Float || value.type()==QVariant::Double)
+    if (value.typeId()==(QMetaType::Type)QMetaType::Float || value.typeId()==(QMetaType::Type)QMetaType::Double)
         add(id, PT_FLT32, value, help, category, PRM_FLAG_SLIDER);
     else
         add(id, PT_INT32, value, help, category, PRM_FLAG_SLIDER);
