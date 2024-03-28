@@ -15,6 +15,7 @@
 
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
+
 #include <QThread>
 #include <QWaitCondition>
 #include <QMutex>
@@ -68,7 +69,7 @@ struct Command
     }
 
     // need to implement this for QList::removeAll()
-    bool operator==(const Command &rhs)
+    bool operator==(const Command &rhs) const
     {
         return m_type==rhs.m_type;
     }
