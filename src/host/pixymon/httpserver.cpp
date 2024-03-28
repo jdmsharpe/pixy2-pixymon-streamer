@@ -31,38 +31,39 @@ HttpServer::~HttpServer()
 void HttpServer::handleRequest(QHttpServerRequest *req, QHttpServerResponse *resp)
 {
     Q_UNUSED(req);
+    Q_UNUSED(resp);
 
-    QString reqPath = req->path();
-    reqPath.remove(QRegularExpression("^[/]*"));
+    // QString reqPath = req->path();
+    // reqPath.remove(QRegularExpression("^[/]*"));
 
-    qDebug() << reqPath;
+    // qDebug() << reqPath;
 
-    //resp->setHeader("Content-Length", QString::number(body.size()));
-    resp->writeHead(200);
+    // //resp->setHeader("Content-Length", QString::number(body.size()));
+    // resp->writeHead(200);
 
-    if (reqPath=="frame")
-    {
-        if (m_interpreter)
-        {
-            QByteArray frame;
+    // if (reqPath=="frame")
+    // {
+    //     if (m_interpreter)
+    //     {
+    //         QByteArray frame;
 
-            m_interpreter->m_renderer->getSavedFrame(&frame);
-            resp->end(frame);
-        }
-    }
-    else
-    {
-        QDir path = QFileInfo(QCoreApplication::applicationFilePath()).absoluteDir();
-        QString file = QFileInfo(path, reqPath).absoluteFilePath();
+    //         m_interpreter->m_renderer->getSavedFrame(&frame);
+    //         resp->end(frame);
+    //     }
+    // }
+    // else
+    // {
+    //     QDir path = QFileInfo(QCoreApplication::applicationFilePath()).absoluteDir();
+    //     QString file = QFileInfo(path, reqPath).absoluteFilePath();
 
-        QFile qf(file);
+    //     QFile qf(file);
 
-        if (!qf.open(QIODevice::ReadOnly))
-            return;
+    //     if (!qf.open(QIODevice::ReadOnly))
+    //         return;
 
-        QTextStream ts(&qf);
+    //     QTextStream ts(&qf);
 
-        resp->end(ts.readAll().toUtf8());
-    }
+    //     resp->end(ts.readAll().toUtf8());
+    // }
 }
 
