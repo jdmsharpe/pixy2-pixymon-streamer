@@ -202,9 +202,9 @@ QStringList Interpreter::parseScriptlet(const QString &scriptlet)
 {
     if (scriptlet.contains(QString("\\") + "n")) // this is comming from the commandline -- we are looking for
         // the backslash followed by the n character, which the c-compiler will always substitute CR character
-        return scriptlet.split(QString("\\") + "n", QString::SkipEmptyParts);
+        return scriptlet.split(QString("\\") + "n", Qt::SkipEmptyParts);
     else
-        return scriptlet.split(QRegExp("[\\n]"), QString::SkipEmptyParts);
+        return scriptlet.split(QRegExp("[\\n]"), Qt::SkipEmptyParts);
 }
 
 QStringList Interpreter::getSections(const QString &id, const QString &string)
@@ -923,7 +923,7 @@ void Interpreter::command(const QString &command, bool interactive)
     if (m_localProgramRunning)
         return;
 
-    QStringList words = command.split(QRegExp("[\\s(),\\t]"), QString::SkipEmptyParts);
+    QStringList words = command.split(QRegExp("[\\s(),\\t]"), Qt::SkipEmptyParts);
 
     if (m_waiting)
     {
@@ -1336,7 +1336,7 @@ void Interpreter::handleProperties(const uint8_t *argList, Parameter *parameter,
     {
         if ((property=extractProperty("@s", desc))=="")
             break;
-        halves = property.split('=', QString::SkipEmptyParts);
+        halves = property.split('=', Qt::SkipEmptyParts);
         if (halves.length()<2)
             continue;  // bogus!
         val = halves[0].toInt(&ok);
