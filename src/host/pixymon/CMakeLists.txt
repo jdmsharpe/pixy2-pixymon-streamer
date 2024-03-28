@@ -64,14 +64,19 @@ set(SOURCES
     ../../common/src/chirp.cpp
 )
 
-# Header files
-set(HEADERS
+# Header files that require MOC processing
+set(MOC_HEADERS
     aboutdialog.h
     cccmodule.h
     chirpmon.h
     configdialog.h
     connectevent.h
     console.h
+    mainwindow.h
+)
+
+# Header files without MOC requirements
+set(HEADERS
     dataexport.h
     debug.h
     dfu.h
@@ -80,7 +85,6 @@ set(HEADERS
     httpserver.h
     interpreter.h
     linemodule.h
-    mainwindow.h
     monmodule.h
     monparameterdb.h
     paramfile.h
@@ -114,12 +118,12 @@ set(RESOURCES
 )
 
 # Run the MOC, UIC, and RCC
-qt6_wrap_cpp(MOC_WRAPPERS ${HEADERS})
+qt6_wrap_cpp(MOC_WRAPPERS ${MOC_HEADERS})
 qt6_wrap_ui(UI_WRAPPERS ${FORMS})
 qt6_add_resources(RCC_WRAPPERS ${RESOURCES})
 
 # Add the executable
-add_executable(${PROJECT_NAME} ${SOURCES} ${MOC_WRAPPERS} ${UI_WRAPPERS} ${RCC_WRAPPERS})
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${MOC_WRAPPERS} ${UI_WRAPPERS} ${RCC_WRAPPERS})
 
 # Link against Qt6 libraries
 target_link_libraries(${PROJECT_NAME} Qt6::Core Qt6::Core5Compat Qt6::Gui Qt6::Widgets Qt6::Xml Qt6::Network Qt6::WebSockets Qt6::HttpServer)
