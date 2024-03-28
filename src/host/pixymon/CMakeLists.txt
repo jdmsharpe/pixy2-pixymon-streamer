@@ -37,9 +37,9 @@ endif()
 # Source files
 set(SOURCES
     aboutdialog.cpp
-    calc.cpp
+    ../../common/src/calc.cpp
     cccmodule.cpp
-    chirp.cpp
+    ../../common/src/chirp.cpp
     chirpmon.cpp
     configdialog.cpp
     connectevent.cpp
@@ -65,9 +65,9 @@ set(SOURCES
 # Header files
 set(HEADERS
     aboutdialog.h
-    calc.h
+    ../../common/inc/calc.h
     cccmodule.h
-    chirp.hpp
+    ../../common/inc/chirp.hpp
     chirpmon.h
     configdialog.h
     connectevent.h
