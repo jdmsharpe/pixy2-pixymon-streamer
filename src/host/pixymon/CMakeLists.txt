@@ -37,9 +37,7 @@ endif()
 # Source files
 set(SOURCES
     aboutdialog.cpp
-    ../../common/src/calc.cpp
     cccmodule.cpp
-    ../../common/src/chirp.cpp
     chirpmon.cpp
     configdialog.cpp
     connectevent.cpp
@@ -60,14 +58,15 @@ set(SOURCES
     renderer.cpp
     usblink.cpp
     videowidget.cpp
+
+    ../../common/src/calc.cpp
+    ../../common/src/chirp.cpp
 )
 
 # Header files
 set(HEADERS
     aboutdialog.h
-    ../../common/inc/calc.h
     cccmodule.h
-    ../../common/inc/chirp.hpp
     chirpmon.h
     configdialog.h
     connectevent.h
@@ -79,22 +78,25 @@ set(HEADERS
     flash.h
     interpreter.h
     linemodule.h
-    ../../common/inc/link.h
     mainwindow.h
     monmodule.h
     monparameterdb.h
     paramfile.h
     parameters.h
-    ../../common/inc/pixydefs.h
     pixymon.h
-    ../../common/inc/pixytypes.h
     reader.h
     renderer.h
-    ../../common/inc/simplevector.h
     sleeper.h
     usb_dfu.h
     usblink.h
     videowidget.h
+
+    ../../common/inc/calc.h
+    ../../common/inc/chirp.hpp
+    ../../common/inc/link.h
+    ../../common/inc/pixydefs.h
+    ../../common/inc/pixytypes.h
+    ../../common/inc/simplevector.h
 )
 
 # UI files
