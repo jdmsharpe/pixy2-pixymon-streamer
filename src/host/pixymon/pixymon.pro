@@ -103,6 +103,7 @@ macx {
 
 unix:!macx {
     DEFINES += __LINUX__
+    DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x050F00 
     PKGCONFIG += libusb-1.0
     LIBS += -lusb-1.0
     INCLUDEPATH += /usr/include/libusb-1.0
