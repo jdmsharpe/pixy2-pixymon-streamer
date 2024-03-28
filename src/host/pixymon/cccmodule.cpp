@@ -112,7 +112,7 @@ void CccModule::paramChange()
 {
     int i;
     QVariant val;
-    char* id[128];
+    char** id;
     uint32_t sigLen;
     uint8_t *sigData;
     QByteArray ba;
