@@ -458,7 +458,6 @@ int Interpreter::sendRun()
 int Interpreter::sendStop()
 {
     int res, response;
-    QTime time;
 
     m_fastPoll = true;
 
@@ -466,11 +465,11 @@ int Interpreter::sendStop()
     if (res<0)
         return res;
 
-    time.start();
+    m_timer.start();
     while(m_running) // poll for stop
     {
         getRunning();
-        if (time.elapsed()>1000)
+        if (m_timer.elapsed()>1000)
             return -2;
     }
     return 0;
