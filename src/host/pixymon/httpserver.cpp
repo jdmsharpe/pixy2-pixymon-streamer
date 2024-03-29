@@ -30,40 +30,49 @@ HttpServer::~HttpServer()
 
 void HttpServer::handleRequest(QHttpServerRequest *req, QHttpServerResponse *resp)
 {
-    Q_UNUSED(req);
-    Q_UNUSED(resp);
+    QString reqPath = req->url().path();
+    reqPath.remove(QRegularExpression("^[/]*"));
 
-    // QString reqPath = req->path();
-    // reqPath.remove(QRegularExpression("^[/]*"));
+    qDebug() << reqPath;
 
-    // qDebug() << reqPath;
+    if (reqPath == "frame")
+    {
+        if (m_interpreter && m_interpreter->m_renderer)
+        {
+            QByteArray frame;
+            m_interpreter->m_renderer->getSavedFrame(&frame);
 
-    // //resp->setHeader("Content-Length", QString::number(body.size()));
-    // resp->writeHead(200);
+            resp->setHeader("Content-Type", "image/jpeg");  // or the appropriate content type
+            resp->setHeader("Content-Length", QString::number(frame.size()));
+            resp->writeHead(QHttpServerResponse::StatusCode::Ok);
+            resp->end(frame);
+        }
+        else
+        {
+            // Handle error, e.g., no frame available
+            resp->writeHead(QHttpServerResponse::StatusCode::NotFound);
+            resp->end("Frame not available");
+        }
+    }
+    else
+    {
+        QDir path = QFileInfo(QCoreApplication::applicationFilePath()).absoluteDir();
+        QString file = QFileInfo(path, reqPath).absoluteFilePath();
 
-    // if (reqPath=="frame")
-    // {
-    //     if (m_interpreter)
-    //     {
-    //         QByteArray frame;
+        QFile qf(file);
 
-    //         m_interpreter->m_renderer->getSavedFrame(&frame);
-    //         resp->end(frame);
-    //     }
-    // }
-    // else
-    // {
-    //     QDir path = QFileInfo(QCoreApplication::applicationFilePath()).absoluteDir();
-    //     QString file = QFileInfo(path, reqPath).absoluteFilePath();
+        if (!qf.open(QIODevice::ReadOnly))
+        {
+            resp->writeHead(QHttpServerResponse::StatusCode::NotFound);
+            resp->end("File not found");
+            return;
+        }
 
-    //     QFile qf(file);
+        QByteArray fileContent = qf.readAll();
+        qf.close();
 
-    //     if (!qf.open(QIODevice::ReadOnly))
-    //         return;
-
-    //     QTextStream ts(&qf);
-
-    //     resp->end(ts.readAll().toUtf8());
-    // }
+        resp->setHeader("Content-Length", QString::number(fileContent.size()));
+        resp->writeHead(QHttpServerResponse::StatusCode::Ok);
+        resp->end(fileContent);
+    }
 }
-
