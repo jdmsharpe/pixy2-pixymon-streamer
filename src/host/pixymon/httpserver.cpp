@@ -35,44 +35,44 @@ void HttpServer::handleRequest(QHttpServerRequest *req, QHttpServerResponse *res
 
     qDebug() << reqPath;
 
-    if (reqPath == "frame")
-    {
-        if (m_interpreter && m_interpreter->m_renderer)
-        {
-            QByteArray frame;
-            m_interpreter->m_renderer->getSavedFrame(&frame);
+    // if (reqPath == "frame")
+    // {
+    //     if (m_interpreter && m_interpreter->m_renderer)
+    //     {
+    //         QByteArray frame;
+    //         m_interpreter->m_renderer->getSavedFrame(&frame);
 
-            resp->setHeader("Content-Type", "image/jpeg");  // or the appropriate content type
-            resp->setHeader("Content-Length", QString::number(frame.size()));
-            resp->writeHead(QHttpServerResponse::StatusCode::Ok);
-            resp->end(frame);
-        }
-        else
-        {
-            // Handle error, e.g., no frame available
-            resp->writeHead(QHttpServerResponse::StatusCode::NotFound);
-            resp->end("Frame not available");
-        }
-    }
-    else
-    {
-        QDir path = QFileInfo(QCoreApplication::applicationFilePath()).absoluteDir();
-        QString file = QFileInfo(path, reqPath).absoluteFilePath();
+    //         resp->setHeader("Content-Type", "image/jpeg");  // or the appropriate content type
+    //         resp->setHeader("Content-Length", QString::number(frame.size()));
+    //         resp->writeHead(QHttpServerResponse::StatusCode::Ok);
+    //         resp->end(frame);
+    //     }
+    //     else
+    //     {
+    //         // Handle error, e.g., no frame available
+    //         resp->writeHead(QHttpServerResponse::StatusCode::NotFound);
+    //         resp->end("Frame not available");
+    //     }
+    // }
+    // else
+    // {
+    //     QDir path = QFileInfo(QCoreApplication::applicationFilePath()).absoluteDir();
+    //     QString file = QFileInfo(path, reqPath).absoluteFilePath();
 
-        QFile qf(file);
+    //     QFile qf(file);
 
-        if (!qf.open(QIODevice::ReadOnly))
-        {
-            resp->writeHead(QHttpServerResponse::StatusCode::NotFound);
-            resp->end("File not found");
-            return;
-        }
+    //     if (!qf.open(QIODevice::ReadOnly))
+    //     {
+    //         resp->writeHead(QHttpServerResponse::StatusCode::NotFound);
+    //         resp->end("File not found");
+    //         return;
+    //     }
 
-        QByteArray fileContent = qf.readAll();
-        qf.close();
+    //     QByteArray fileContent = qf.readAll();
+    //     qf.close();
 
-        resp->setHeader("Content-Length", QString::number(fileContent.size()));
-        resp->writeHead(QHttpServerResponse::StatusCode::Ok);
-        resp->end(fileContent);
-    }
+    //     resp->setHeader("Content-Length", QString::number(fileContent.size()));
+    //     resp->writeHead(QHttpServerResponse::StatusCode::Ok);
+    //     resp->end(fileContent);
+    // }
 }
