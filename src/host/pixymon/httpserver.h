@@ -21,9 +21,6 @@ public:
         m_interpreter = interpreter;
     }
 
-private slots:
-    void newRequest(QHttpServerRequest *req, QHttpServerResponse *resp);
-
 private:
     QHttpServer *m_server;
     Interpreter *m_interpreter;
