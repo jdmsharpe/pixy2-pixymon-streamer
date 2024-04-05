@@ -12,6 +12,29 @@
 #include "interpreter.h"
 #include "renderer.h"
 
+namespace {
+
+// Convert Frame8 to QByteArray
+QByteArray frame8ToQByteArray(const Frame8& frame) {
+    if (!frame.m_pixels || frame.m_width <= 0 || frame.m_height <= 0) {
+        return QByteArray();
+    }
+
+    // Use QImage::Format_RGB888 for RGB pixel data
+    QImage image(frame.m_pixels, frame.m_width, frame.m_height, QImage::Format_RGB888);
+
+    QByteArray byteArray;
+    QBuffer buffer(&byteArray);
+    buffer.open(QIODevice::WriteOnly);
+
+    // Convert QImage to a format like PNG or JPEG
+    image.save(&buffer, "JPEG");
+
+    return byteArray;
+}
+
+}
+
 HttpServer::HttpServer()
 {
     m_interpreter = nullptr;
@@ -24,8 +47,8 @@ HttpServer::HttpServer()
 
         if (action == "snapshot") {
             if (m_interpreter && m_interpreter->m_renderer) {
-                QByteArray frame;
-                m_interpreter->m_renderer->getSavedFrame(&frame);
+                Frame8* rawFrame = m_interpreter->m_renderer->backgroundRaw();
+                QByteArray frame = frame8ToQByteArray(*rawFrame);
 
                 // Sending the frame as a response
                 responder.write(frame, "image/jpeg"); // or the appropriate content type
