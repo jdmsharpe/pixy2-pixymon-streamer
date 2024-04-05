@@ -1,5 +1,7 @@
 #include "httpserver.h"
 
+#include <QBuffer>
+#include <QImage>
 #include <QFile>
 #include <QDir>
 #include <QFileInfo>
