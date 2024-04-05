@@ -31,11 +31,11 @@ HttpServer::HttpServer()
                 responder.write(frame, "image/jpeg"); // or the appropriate content type
             } else {
                 // Respond with an error message if the frame is not available
-                responder.write(QByteArray("Snapshot not available"), 404);
+                responder.write(QByteArray("Snapshot not available"), "text/plain", QHttpServerResponder::StatusCode::NotFound);
             }
         } else {
             // Handle other actions or invalid requests
-            responder.write(QByteArray("Invalid request"), 400);
+            responder.write(QByteArray("Invalid request"), "text/plain", QHttpServerResponder::StatusCode::BadRequest);
         }
     });
 
@@ -50,15 +50,13 @@ HttpServer::HttpServer()
         QFile qf(file);
         if (!qf.open(QIODevice::ReadOnly))
         {
-            responder.write(QByteArray("File not found"), 404);
+            responder.write(QByteArray("File not found"), "text/plain", QHttpServerResponder::StatusCode::NotFound);
             return;
         }
 
         QByteArray fileContent = qf.readAll();
         qf.close();
-
-        // Sending the file as a response
-        responder.write(fileContent);  // Set the appropriate content type if needed
+        responder.write(fileContent, "application/octet-stream");  // Adjust MIME type based on the file
     });
 
     // Start listening
