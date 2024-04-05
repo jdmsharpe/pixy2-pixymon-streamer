@@ -22,7 +22,7 @@ public:
     }
 
 private slots:
-    void handleRequest(QHttpServerRequest *req, QHttpServerResponse *resp);
+    void newRequest(QHttpServerRequest *req, QHttpServerResponse *resp);
 
 private:
     QHttpServer *m_server;

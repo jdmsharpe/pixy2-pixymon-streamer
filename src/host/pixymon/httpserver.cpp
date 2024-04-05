@@ -28,7 +28,7 @@ HttpServer::~HttpServer()
     delete m_server;
 }
 
-void HttpServer::handleRequest(QHttpServerRequest *req, QHttpServerResponse *resp)
+void HttpServer::newRequest(QHttpServerRequest *req, QHttpServerResponse *resp)
 {
     QString reqPath = req->url().path();
     reqPath.remove(QRegularExpression("^[/]*"));
