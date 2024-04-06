@@ -48,6 +48,8 @@ HttpServer::HttpServer(Interpreter *interpreter)
         QString action = query.queryItemValue("action");
 
         if (action == "snapshot") {
+            std::cout << "m_interpreter: " << m_interpreter << std::endl;
+            std::cout << "m_interpreter->m_renderer: " << m_interpreter->m_renderer << std::endl;
             if (m_interpreter && m_interpreter->m_renderer) {
                 Frame8* rawFrame = m_interpreter->m_renderer->backgroundRaw();
                 QByteArray frame = frame8ToQByteArray(*rawFrame);
