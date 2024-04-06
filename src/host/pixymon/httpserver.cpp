@@ -30,20 +30,20 @@ QByteArray frame8ToQByteArray(const Frame8& frame) {
     buffer.open(QIODevice::WriteOnly);
 
     // Convert QImage to a format like PNG or JPEG
-    image.save(&buffer, "JPEG");
+    image.save(&buffer, "PNG");
 
     return byteArray;
 }
 
-}
+} // namespace
 
 HttpServer::HttpServer()
 {
     m_interpreter = nullptr;
     m_server = new QHttpServer(this);
 
-    // Setup route for '/webcam/' with 'action=snapshot'
-    m_server->route("/webcam/", [this](const QHttpServerRequest &request, QHttpServerResponder &&responder) {
+    // Setup route for '/pixy2/' with 'action=snapshot'
+    m_server->route("/pixy2/", [this](const QHttpServerRequest &request, QHttpServerResponder &&responder) {
         QUrlQuery query(request.url().query());
         QString action = query.queryItemValue("action");
 
