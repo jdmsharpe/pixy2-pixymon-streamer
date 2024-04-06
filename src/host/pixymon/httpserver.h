@@ -13,7 +13,7 @@ class HttpServer : public QObject
     Q_OBJECT
 
 public:
-    HttpServer();
+    HttpServer(Interpreter *interpreter);
     ~HttpServer();
 
     void setInterpreter(Interpreter *interpreter)

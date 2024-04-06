@@ -37,9 +37,9 @@ QByteArray frame8ToQByteArray(const Frame8& frame) {
 
 } // namespace
 
-HttpServer::HttpServer()
+HttpServer::HttpServer(Interpreter *interpreter)
 {
-    m_interpreter = nullptr;
+    m_interpreter = interpreter;
     m_server = new QHttpServer(this);
 
     // Setup route for '/pixy2/' with 'action=snapshot'
