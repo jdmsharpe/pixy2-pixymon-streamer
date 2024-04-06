@@ -18,6 +18,8 @@
 
 #include <QMainWindow>
 #include <vector>
+
+#include "httpserver.h"
 #include "monparameterdb.h"
 
 #define PIXY_PARAMFILE_TAG      "Pixy_parameters"
@@ -47,8 +49,6 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(int argc, char *argv[], QWidget *parent = 0);
     ~MainWindow();
-
-    Interpreter *interpreter() { return m_interpreter; }
 
     friend class VideoWidget;
     friend class ConsoleWidget;
@@ -115,6 +115,7 @@ private:
     std::vector<QAction *> m_views;
     std::vector<QAction *> m_progs;
     Ui::MainWindow *m_ui;
+    HttpServer *m_httpServer;
 
     QString m_firmwareFile;
     QString m_argvFirmwareFile;

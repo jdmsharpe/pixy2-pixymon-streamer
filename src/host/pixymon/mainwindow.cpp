@@ -107,6 +107,8 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     m_connect = new ConnectEvent(this);
     if (m_connect->getConnected()==NONE)
         error("No Pixy devices have been detected.\n");
+
+    m_httpServer = new HttpServer(m_interpreter);
 }
 
 MainWindow::~MainWindow()

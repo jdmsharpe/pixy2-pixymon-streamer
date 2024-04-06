@@ -17,7 +17,6 @@
 #include <QStyleFactory>
 #include <QDebug>
 #include "mainwindow.h"
-#include "httpserver.h"
 
 int main(int argc, char *argv[])
 {
@@ -43,7 +42,6 @@ int main(int argc, char *argv[])
     a.setPalette(darkPalette);
 
     MainWindow w(argc, argv);
-    HttpServer hs(w.interpreter());
     w.show();
 
     return a.exec();
