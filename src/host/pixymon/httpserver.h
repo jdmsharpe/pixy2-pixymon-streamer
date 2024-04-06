@@ -16,11 +16,6 @@ public:
     HttpServer(Interpreter *interpreter);
     ~HttpServer();
 
-    void setInterpreter(Interpreter *interpreter)
-    {
-        m_interpreter = interpreter;
-    }
-
 private:
     QHttpServer *m_server;
     Interpreter *m_interpreter;

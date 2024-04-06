@@ -43,8 +43,7 @@ int main(int argc, char *argv[])
     a.setPalette(darkPalette);
 
     MainWindow w(argc, argv);
-    HttpServer hs;
-    hs.setInterpreter(w.interpreter());
+    HttpServer hs(w.interpreter());
     w.show();
 
     return a.exec();
