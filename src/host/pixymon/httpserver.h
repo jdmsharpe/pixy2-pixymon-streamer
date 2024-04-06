@@ -13,8 +13,13 @@ class HttpServer : public QObject
     Q_OBJECT
 
 public:
-    HttpServer(Interpreter *interpreter);
+    HttpServer();
     ~HttpServer();
+
+    void setInterpreter(Interpreter *interpreter)
+    {
+        m_interpreter = interpreter;
+    }
 
 private:
     QHttpServer *m_server;

@@ -108,13 +108,16 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     if (m_connect->getConnected()==NONE)
         error("No Pixy devices have been detected.\n");
 
-    m_httpServer = new HttpServer(m_interpreter);
+    m_httpServer = new HttpServer();
 }
 
 MainWindow::~MainWindow()
 {
     if (m_connect)
         delete m_connect;
+
+    if (m_httpServer)
+        delete m_httpServer;
 
     DBG("deleting mainWindow");
     // we don't delete any of the widgets because the parent deletes it's children upon deletion
@@ -406,6 +409,7 @@ void MainWindow::connectPixy(bool state)
     }
 
     updateButtons();
+    m_httpServer->setInterpreter(m_interpreter);
 }
 
 void MainWindow::setEnabledActionsViews(bool enable)
