@@ -90,3 +90,9 @@ HttpServer::HttpServer()
     // Start listening
     m_server->listen(QHostAddress::Any, 8080);
 }
+
+HttpServer::~HttpServer()
+{
+    delete m_server;
+    m_server = nullptr;
+}
