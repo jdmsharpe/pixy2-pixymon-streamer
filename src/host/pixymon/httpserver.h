@@ -7,7 +7,6 @@ class Interpreter;
 class QHttpServer;
 class QHttpServerRequest;
 class QHttpServerResponse;
-class QProcess;
 
 class HttpServer : public QObject
 {

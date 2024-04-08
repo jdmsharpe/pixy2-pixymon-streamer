@@ -9,7 +9,6 @@
 #include <QHttpServerRequest>
 #include <QHttpServerResponder>
 #include <QImage>
-#include <QProcess>
 #include <QRegularExpression>
 #include <iostream>
 
