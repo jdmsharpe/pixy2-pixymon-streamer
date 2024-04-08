@@ -9,6 +9,7 @@
 #include <QHttpServerRequest>
 #include <QHttpServerResponder>
 #include <QImage>
+#include <QProcess>
 #include <QRegularExpression>
 #include <iostream>
 
@@ -57,12 +58,50 @@ HttpServer::HttpServer() {
       }
     } else if (action == "stream") {
       if (m_interpreter && m_interpreter->m_renderer) {
-        // Start streaming MJPEG frames
-      } else {
-        // Respond with an error message if the frame is not available
-        responder.write(QByteArray("Stream not available"), "text/plain",
-                        QHttpServerResponder::StatusCode::NotFound);
-      }
+        // Start streaming
+        if (!startStreaming()) {
+          responder.write(QByteArray("Failed to start stream"), "text/plain",
+                          QHttpServerResponder::StatusCode::InternalServerError);
+          return;
+        }
+
+        if (m_ffmpeg.isOpen()) {
+          responder.writeHeaders(
+              {{"Content-Type", "multipart/x-mixed-replace; boundary=frame"}});
+
+          while (m_ffmpeg.isOpen() && !responder.isFinished()) {
+            QImage *backgroundImage =
+                m_interpreter->m_renderer->backgroundImage();
+
+            // Write frame to FFmpeg's stdin
+            QByteArray frameData = qImageToQByteArray(*backgroundImage);
+            m_ffmpeg.write(frameData);
+            m_ffmpeg.waitForBytesWritten();
+
+            // Read encoded frame from FFmpeg's stdout
+            QByteArray encodedFrame = m_ffmpeg.readAllStandardOutput();
+            if (!encodedFrame.isEmpty()) {
+              responder.write("--frame\r\n");
+              responder.write("Content-Type: image/jpeg\r\n");
+              responder.write(
+                  "Content-Length: " + QByteArray::number(encodedFrame.size()) +
+                  "\r\n\r\n");
+              responder.write(encodedFrame);
+              responder.flush();
+            }
+
+            QThread::msleep(16);  // Control frame rate
+          }
+
+          if (!responder.isFinished()) {
+            // Client may have disconnected, stop FFmpeg
+            stopStreaming();
+          }
+        } else {
+          responder.write(
+              QByteArray("Failed to start stream"), "text/plain",
+              QHttpServerResponder::StatusCode::InternalServerError);
+        }
     } else {
       responder.write(QByteArray("Invalid request"), "text/plain",
                       QHttpServerResponder::StatusCode::BadRequest);
@@ -74,6 +113,37 @@ HttpServer::HttpServer() {
 }
 
 HttpServer::~HttpServer() {
+  // Stop the ffmpeg process
+  stopStreaming();
+
   delete m_server;
   m_server = nullptr;
+}
+
+bool HttpServer::startStreaming() {
+  // Guard against multiple streams
+  if (m_ffmpeg.isOpen()) {
+    return false;
+  }
+
+  m_ffmpeg.start("ffmpeg", QStringList() << "-f"
+                                         << "rawvideo"
+                                         << "-pixel_format"
+                                         << "rgb24"
+                                         << "-video_size"
+                                         << "316x208"
+                                         << "-i"
+                                         << "-"
+                                         << "-f"
+                                         << "mjpeg"
+                                         << "pipe:1");
+
+  return m_ffmpeg.isOpen();
+}
+
+void HttpServer::stopStreaming() {
+  if (m_ffmpeg.isOpen()) {
+    m_ffmpeg.kill();
+    m_ffmpeg.waitForFinished();
+  }
 }

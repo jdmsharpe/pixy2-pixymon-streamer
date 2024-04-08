@@ -3,10 +3,11 @@
 
 #include <QObject>
 
+class Interpreter;
 class QHttpServer;
 class QHttpServerRequest;
 class QHttpServerResponse;
-class Interpreter;
+class QProcess;
 
 class HttpServer : public QObject
 {
@@ -22,8 +23,13 @@ public:
     }
 
 private:
+    bool startStreaming();
+
+    void stopStreaming();
+
     QHttpServer *m_server;
     Interpreter *m_interpreter;
+    QProcess m_ffmpeg;
 };
 
 #endif // HTTPSERVER_H
