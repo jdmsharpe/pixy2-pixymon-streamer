@@ -36,8 +36,8 @@ HttpServer::HttpServer()
     m_interpreter = nullptr;
     m_server = new QHttpServer(this);
 
-    // Setup route for serving snapshots at '' with 'action=snapshot'
-    m_server->route("", [this](const QHttpServerRequest &request, QHttpServerResponder &&responder) {
+    // Setup route for serving snapshots at 'pixy2' with 'action=snapshot'
+    m_server->route("pixy2", [this](const QHttpServerRequest &request, QHttpServerResponder &&responder) {
         QUrlQuery query(request.url().query());
         QString action = query.queryItemValue("action");
 
@@ -59,8 +59,8 @@ HttpServer::HttpServer()
         }
     });
 
-    // Setup route for serving streams at '/webcam/' with 'action=stream'
-    m_server->route("/webcam/", [this](const QHttpServerRequest &request, QHttpServerResponder &&responder) {
+    // Setup route for serving streams at 'webcam' with 'action=stream'
+    m_server->route("webcam", [this](const QHttpServerRequest &request, QHttpServerResponder &&responder) {
         QUrlQuery query(request.url().query());
         QString action = query.queryItemValue("action");
 
