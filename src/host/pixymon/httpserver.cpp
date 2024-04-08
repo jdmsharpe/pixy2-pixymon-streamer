@@ -43,7 +43,7 @@ HttpServer::HttpServer()
 
         if (action == "snapshot") {
             if (m_interpreter && m_interpreter->m_renderer) {
-                QImage backgroundImage = m_interpreter->m_renderer->backgroundImage();
+                QImage* backgroundImage = m_interpreter->m_renderer->backgroundImage();
                 QByteArray byteArray = qImageToQByteArray(*backgroundImage);
 
                 // Sending the frame as a response
