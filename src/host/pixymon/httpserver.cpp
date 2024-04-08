@@ -76,13 +76,7 @@ HttpServer::HttpServer() {
           // Read encoded frame from stdout
           QByteArray encodedFrame = m_ffmpeg.readAllStandardOutput();
           if (!encodedFrame.isEmpty()) {
-            responder.write("--frame\r\n");
-            responder.write("Content-Type: image/jpeg\r\n");
-            responder.write(
-                "Content-Length: " + QByteArray::number(encodedFrame.size()) +
-                "\r\n\r\n");
-            responder.write(encodedFrame);
-            responder.flush();
+            responder.write(encodedFrame, "image/jpeg");
           }
 
           QThread::msleep(16); // Control frame rate
