@@ -23,7 +23,7 @@ QByteArray qImageToQByteArray(const QImage& image) {
     QBuffer buffer(&byteArray);
     buffer.open(QIODevice::WriteOnly);
 
-    // Convert QImage to a format like PNG or JPEG
+    // Convert QImage to PNG - looks better for Pixy than jpeg due to compression artifacts
     image.save(&buffer, "PNG");
 
     return byteArray;
@@ -36,18 +36,19 @@ HttpServer::HttpServer()
     m_interpreter = nullptr;
     m_server = new QHttpServer(this);
 
-    // Setup route for '/pixy2/' with 'action=snapshot'
-    m_server->route("/pixy2/", [this](const QHttpServerRequest &request, QHttpServerResponder &&responder) {
+    // Setup route for serving snapshots at '' with 'action=snapshot'
+    m_server->route("", [this](const QHttpServerRequest &request, QHttpServerResponder &&responder) {
         QUrlQuery query(request.url().query());
         QString action = query.queryItemValue("action");
 
         if (action == "snapshot") {
             if (m_interpreter && m_interpreter->m_renderer) {
+                // Get the image directly from the renderer
                 QImage* backgroundImage = m_interpreter->m_renderer->backgroundImage();
                 QByteArray byteArray = qImageToQByteArray(*backgroundImage);
 
-                // Sending the frame as a response
-                responder.write(byteArray, "image/png"); // or the appropriate content type
+                // Send the converted image as a byte array to the client
+                responder.write(byteArray, "image/png");
             } else {
                 // Respond with an error message if the frame is not available
                 responder.write(QByteArray("Snapshot not available"), "text/plain", QHttpServerResponder::StatusCode::NotFound);
@@ -58,24 +59,18 @@ HttpServer::HttpServer()
         }
     });
 
-    // Setup route for serving files
-    m_server->route("<regex to match file paths>", [this](const QHttpServerRequest &request, QHttpServerResponder &&responder) {
-        QString reqPath = request.url().path();
-        reqPath.remove(QRegularExpression("^[/]*"));
+    // Setup route for serving streams at '/webcam/' with 'action=stream'
+    m_server->route("/webcam/", [this](const QHttpServerRequest &request, QHttpServerResponder &&responder) {
+        QUrlQuery query(request.url().query());
+        QString action = query.queryItemValue("action");
 
-        QDir path = QFileInfo(QCoreApplication::applicationFilePath()).absoluteDir();
-        QString file = QFileInfo(path, reqPath).absoluteFilePath();
-
-        QFile qf(file);
-        if (!qf.open(QIODevice::ReadOnly))
-        {
-            responder.write(QByteArray("File not found"), "text/plain", QHttpServerResponder::StatusCode::NotFound);
-            return;
+        if (action == "stream") {
+            // Start streaming MJPEG frames
+            // You'll need to implement the logic to continuously capture frames
+            // and use FFmpeg to encode them as MJPEG, sending each frame in response.
+        } else {
+            responder.write(QByteArray("Invalid request"), "text/plain", QHttpServerResponder::StatusCode::BadRequest);
         }
-
-        QByteArray fileContent = qf.readAll();
-        qf.close();
-        responder.write(fileContent, "application/octet-stream");  // Adjust MIME type based on the file
     });
 
     // Start listening
