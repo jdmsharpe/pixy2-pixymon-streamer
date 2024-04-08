@@ -42,36 +42,30 @@ HttpServer::HttpServer() {
     QUrlQuery query(request.url().query());
     QString action = query.queryItemValue("action");
 
-    switch (action) {
-      case "snapshot":
-        if (m_interpreter && m_interpreter->m_renderer) {
-          // Get the image directly from the renderer
-          QImage *backgroundImage =
-              m_interpreter->m_renderer->backgroundImage();
-          QByteArray byteArray = qImageToQByteArray(*backgroundImage);
+    if (action == "snapshot") {
+      if (m_interpreter && m_interpreter->m_renderer) {
+        // Get the image directly from the renderer
+        QImage *backgroundImage = m_interpreter->m_renderer->backgroundImage();
+        QByteArray byteArray = qImageToQByteArray(*backgroundImage);
 
-          // Send the converted image as a byte array to the client
-          responder.write(byteArray, "image/png");
-        } else {
-          // Respond with an error message if the frame is not available
-          responder.write(QByteArray("Snapshot not available"), "text/plain",
-                          QHttpServerResponder::StatusCode::NotFound);
-        }
-        break;
-      case "stream":
-        if (m_interpreter && m_interpreter->m_renderer) {
-          // Start streaming MJPEG frames
-        } else {
-          // Respond with an error message if the frame is not available
-          responder.write(QByteArray("Stream not available"), "text/plain",
-                          QHttpServerResponder::StatusCode::NotFound);
-        }
-        break;
-      default:
-        // Handle other actions or invalid requests
-        responder.write(QByteArray("Invalid request"), "text/plain",
-                        QHttpServerResponder::StatusCode::BadRequest);
-        break;
+        // Send the converted image as a byte array to the client
+        responder.write(byteArray, "image/png");
+      } else {
+        // Respond with an error message if the frame is not available
+        responder.write(QByteArray("Snapshot not available"), "text/plain",
+                        QHttpServerResponder::StatusCode::NotFound);
+      }
+    } else if (action == "stream") {
+      if (m_interpreter && m_interpreter->m_renderer) {
+        // Start streaming MJPEG frames
+      } else {
+        // Respond with an error message if the frame is not available
+        responder.write(QByteArray("Stream not available"), "text/plain",
+                        QHttpServerResponder::StatusCode::NotFound);
+      }
+    } else {
+      responder.write(QByteArray("Invalid request"), "text/plain",
+                      QHttpServerResponder::StatusCode::BadRequest);
     }
   });
 
