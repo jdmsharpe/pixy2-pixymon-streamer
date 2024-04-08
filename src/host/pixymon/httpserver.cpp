@@ -31,7 +31,7 @@ QByteArray frame8ToQByteArray(const Frame8& frame) {
     buffer.open(QIODevice::WriteOnly);
 
     // Convert QImage to a format like PNG or JPEG
-    image.save(&buffer, "JPEG");
+    image.save(&buffer, "PNG");
 
     return byteArray;
 }
@@ -49,14 +49,12 @@ HttpServer::HttpServer()
         QString action = query.queryItemValue("action");
 
         if (action == "snapshot") {
-            std::cout << "m_interpreter: " << m_interpreter << std::endl;
-            std::cout << "m_interpreter->m_renderer: " << m_interpreter->m_renderer << std::endl;
             if (m_interpreter && m_interpreter->m_renderer) {
                 Frame8* rawFrame = m_interpreter->m_renderer->backgroundRaw();
                 QByteArray frame = frame8ToQByteArray(*rawFrame);
 
                 // Sending the frame as a response
-                responder.write(frame, "image/jpeg"); // or the appropriate content type
+                responder.write(frame, "image/png"); // or the appropriate content type
             } else {
                 // Respond with an error message if the frame is not available
                 responder.write(QByteArray("Snapshot not available"), "text/plain", QHttpServerResponder::StatusCode::NotFound);
