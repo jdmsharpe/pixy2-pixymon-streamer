@@ -65,9 +65,12 @@ HttpServer::HttpServer()
         QString action = query.queryItemValue("action");
 
         if (action == "stream") {
-            // Start streaming MJPEG frames
-            // You'll need to implement the logic to continuously capture frames
-            // and use FFmpeg to encode them as MJPEG, sending each frame in response.
+            if (m_interpreter && m_interpreter->m_renderer) {
+                // Start streaming MJPEG frames
+            } else {
+                // Respond with an error message if the frame is not available
+                responder.write(QByteArray("Stream not available"), "text/plain", QHttpServerResponder::StatusCode::NotFound);
+            }
         } else {
             responder.write(QByteArray("Invalid request"), "text/plain", QHttpServerResponder::StatusCode::BadRequest);
         }
