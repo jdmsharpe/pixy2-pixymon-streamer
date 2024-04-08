@@ -17,15 +17,8 @@
 
 namespace {
 
-// Convert Frame8 to QByteArray
-QByteArray frame8ToQByteArray(const Frame8& frame) {
-    if (!frame.m_pixels || frame.m_width <= 0 || frame.m_height <= 0) {
-        return QByteArray();
-    }
-
-    // Use QImage::Format_RGB888 for RGB pixel data
-    QImage image(frame.m_pixels, frame.m_width, frame.m_height, QImage::Format_RGB888);
-
+// Convert QImage to QByteArray
+QByteArray qImageToQByteArray(const QImage& image) {
     QByteArray byteArray;
     QBuffer buffer(&byteArray);
     buffer.open(QIODevice::WriteOnly);
@@ -50,11 +43,11 @@ HttpServer::HttpServer()
 
         if (action == "snapshot") {
             if (m_interpreter && m_interpreter->m_renderer) {
-                Frame8* rawFrame = m_interpreter->m_renderer->backgroundRaw();
-                QByteArray frame = frame8ToQByteArray(*rawFrame);
+                QImage backgroundImage = m_interpreter->m_renderer->backgroundImage();
+                QByteArray byteArray = qImageToQByteArray(*backgroundImage);
 
                 // Sending the frame as a response
-                responder.write(frame, "image/png"); // or the appropriate content type
+                responder.write(byteArray, "image/png"); // or the appropriate content type
             } else {
                 // Respond with an error message if the frame is not available
                 responder.write(QByteArray("Snapshot not available"), "text/plain", QHttpServerResponder::StatusCode::NotFound);
