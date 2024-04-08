@@ -2,6 +2,7 @@
 #define HTTPSERVER_H
 
 #include <QObject>
+#include <QProcess>
 
 class Interpreter;
 class QHttpServer;
