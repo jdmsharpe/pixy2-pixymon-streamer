@@ -23,9 +23,8 @@ QByteArray qImageToQByteArray(const QImage &image) {
   QBuffer buffer(&byteArray);
   buffer.open(QIODevice::WriteOnly);
 
-  // Convert QImage to PNG - looks better for Pixy than jpeg due to compression
-  // artifacts
-  image.save(&buffer, "PNG");
+  // Convert QImage to JPEG
+  image.save(&buffer, "JPEG");
 
   return byteArray;
 }
@@ -49,7 +48,7 @@ HttpServer::HttpServer() {
         QByteArray byteArray = qImageToQByteArray(*backgroundImage);
 
         // Send the converted image as a byte array to the client
-        responder.write(byteArray, "image/png");
+        responder.write(byteArray, "image/jpeg");
       } else {
         // Respond with an error message if the frame is not available
         responder.write(QByteArray("Snapshot not available"), "text/plain",
@@ -64,43 +63,35 @@ HttpServer::HttpServer() {
           return;
         }
 
-        if (m_ffmpeg.isOpen()) {
-          responder.writeHeaders(
-              {{"Content-Type", "multipart/x-mixed-replace; boundary=frame"}});
+        // Keep serving frames while the ffmpeg process is running
+        while (m_ffmpeg.isOpen()) {
+          QImage *backgroundImage =
+              m_interpreter->m_renderer->backgroundImage();
 
-          while (m_ffmpeg.isOpen() && !responder.isFinished()) {
-            QImage *backgroundImage =
-                m_interpreter->m_renderer->backgroundImage();
+          // Write frame to stdin
+          QByteArray frameData = qImageToQByteArray(*backgroundImage);
+          m_ffmpeg.write(frameData);
+          m_ffmpeg.waitForBytesWritten();
 
-            // Write frame to FFmpeg's stdin
-            QByteArray frameData = qImageToQByteArray(*backgroundImage);
-            m_ffmpeg.write(frameData);
-            m_ffmpeg.waitForBytesWritten();
-
-            // Read encoded frame from FFmpeg's stdout
-            QByteArray encodedFrame = m_ffmpeg.readAllStandardOutput();
-            if (!encodedFrame.isEmpty()) {
-              responder.write("--frame\r\n");
-              responder.write("Content-Type: image/jpeg\r\n");
-              responder.write(
-                  "Content-Length: " + QByteArray::number(encodedFrame.size()) +
-                  "\r\n\r\n");
-              responder.write(encodedFrame);
-              responder.flush();
-            }
-
-            QThread::msleep(16);  // Control frame rate
+          // Read encoded frame from stdout
+          QByteArray encodedFrame = m_ffmpeg.readAllStandardOutput();
+          if (!encodedFrame.isEmpty()) {
+            responder.write("--frame\r\n");
+            responder.write("Content-Type: image/jpeg\r\n");
+            responder.write(
+                "Content-Length: " + QByteArray::number(encodedFrame.size()) +
+                "\r\n\r\n");
+            responder.write(encodedFrame);
+            responder.flush();
           }
 
-          if (!responder.isFinished()) {
-            // Client may have disconnected, stop FFmpeg
-            stopStreaming();
-          }
-        } else {
-          responder.write(
-              QByteArray("Failed to start stream"), "text/plain",
-              QHttpServerResponder::StatusCode::InternalServerError);
+          QThread::msleep(16); // Control frame rate
         }
+      } else {
+        // Respond with an error message if the frame is not available
+        responder.write(QByteArray("Stream not available"), "text/plain",
+                        QHttpServerResponder::StatusCode::NotFound);
+      }
     } else {
       responder.write(QByteArray("Invalid request"), "text/plain",
                       QHttpServerResponder::StatusCode::BadRequest);
