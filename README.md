@@ -1,3 +1,5 @@
+**This is a fork of the pixy2-pixymon repo intended to serve as a platform for streaming Pixy2 image output to a webserver.**
+
 Pixy2 README
 
 This directory contains:
