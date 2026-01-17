@@ -121,6 +121,7 @@ private:
     QString m_argvFirmwareFile;
     QString m_initScript;
     QString m_pixyflash;
+    int m_httpPort;
     bool m_versionIncompatibility;
     QSettings *m_settings;
     MonParameterDB m_parameters;

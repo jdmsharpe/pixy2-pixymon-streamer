@@ -11,7 +11,7 @@ This project extends the official PixyMon application to serve the Pixy2 camera 
 - **60 FPS Support**: Matches Pixy2's maximum frame rate capability
 - **Frame Caching**: Efficient encoding - only re-encodes when frames change
 - **Multi-client Support**: Stream to multiple clients simultaneously
-- **Configurable Port**: Set the HTTP server port via Qt settings
+- **Configurable Port**: Set the HTTP server port via command line or config file
 
 ## HTTP Endpoints
 
@@ -45,13 +45,19 @@ http://<your-ip>:8082/pixy2/?action=snapshot
 
 ### Configuring the Server Port
 
-The HTTP server port defaults to **8082**. To change it, edit the Qt settings file:
+The HTTP server port defaults to **8082**. You can change it via command line:
+
+```bash
+./PixyMon --port 9000
+```
+
+Or via a config file (the command line takes priority):
 
 **Linux**: `~/.config/Charmed Labs LLC/PixyMon.conf`
 
 ```ini
 [General]
-http_server_port=8082
+http_server_port=9000
 ```
 
 **macOS**: `~/Library/Preferences/com.Charmed Labs LLC.PixyMon.plist`

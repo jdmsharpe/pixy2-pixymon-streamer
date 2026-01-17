@@ -64,6 +64,7 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     m_fwMessage = NULL;
     m_versionIncompatibility = false;
     m_testCycle = false;
+    m_httpPort = -1;  // -1 means use config/default
     m_waiting = WAIT_NONE;
 
     parseCommandline(argc, argv);
@@ -110,8 +111,10 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     if (m_connect->getConnected()==NONE)
         error("No Pixy devices have been detected.\n");
 
-    // Start HTTP server for MJPEG streaming (port configurable via QSettings)
-    int serverPort = m_settings->value("http_server_port", k_defaultServerPort).toInt();
+    // Start HTTP server for MJPEG streaming
+    // Priority: command line --port > QSettings > default
+    int serverPort = (m_httpPort > 0) ? m_httpPort
+                   : m_settings->value("http_server_port", k_defaultServerPort).toInt();
     m_httpServer = new HttpServer(static_cast<quint16>(serverPort));
 }
 
@@ -154,6 +157,11 @@ void MainWindow::parseCommandline(int argc, char *argv[])
             i++;
             m_pixyflash = argv[i];
             m_pixyflash.remove(QRegularExpression("[\"']"));
+        }
+        else if ((!strcmp("-port", argv[i]) || !strcmp("--port", argv[i])) && i+1<argc)
+        {
+            i++;
+            m_httpPort = atoi(argv[i]);
         }
     }
 }
