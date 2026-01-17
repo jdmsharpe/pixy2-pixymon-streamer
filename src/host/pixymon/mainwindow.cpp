@@ -41,6 +41,8 @@
 
 extern ChirpProc c_grabFrame;
 
+constexpr int k_serverPortNumber = 8082;
+
 MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     QMainWindow(parent),
     m_ui(new Ui::MainWindow)
@@ -108,7 +110,7 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     if (m_connect->getConnected()==NONE)
         error("No Pixy devices have been detected.\n");
 
-    m_httpServer = new HttpServer();
+    m_httpServer = new HttpServer(k_serverPortNumber);
 }
 
 MainWindow::~MainWindow()

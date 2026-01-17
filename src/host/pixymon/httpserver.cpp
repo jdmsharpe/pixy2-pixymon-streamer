@@ -1,133 +1,309 @@
 #include "httpserver.h"
 
 #include <QBuffer>
-#include <QCoreApplication>
-#include <QDir>
-#include <QFile>
-#include <QFileInfo>
-#include <QHttpServer>
-#include <QHttpServerRequest>
-#include <QHttpServerResponder>
 #include <QImage>
-#include <QRegularExpression>
-#include <iostream>
+#include <QTcpServer>
+#include <QTcpSocket>
+#include <QUrlQuery>
+#include <QUrl>
 
 #include "interpreter.h"
 #include "renderer.h"
 
-namespace {
+const QByteArray HttpServer::MJPEG_BOUNDARY = "----pixyframe";
 
-// Convert QImage to QByteArray
-QByteArray qImageToQByteArray(const QImage &image) {
-  QByteArray byteArray;
-  QBuffer buffer(&byteArray);
-  buffer.open(QIODevice::WriteOnly);
+HttpServer::HttpServer(quint16 port)
+{
+    m_interpreter = nullptr;
+    m_lastFramePtr = nullptr;
+    m_server = new QTcpServer(this);
 
-  // Convert QImage to JPEG
-  image.save(&buffer, "JPEG");
+    connect(m_server, &QTcpServer::newConnection,
+            this, &HttpServer::onNewConnection);
 
-  return byteArray;
+    // Stream timer sends frames to all connected stream clients
+    connect(&m_streamTimer, &QTimer::timeout,
+            this, &HttpServer::streamFrame);
+
+    if (m_server->listen(QHostAddress::Any, port)) {
+        qDebug() << "HTTP server listening on port" << port;
+    } else {
+        qWarning() << "Failed to start HTTP server:" << m_server->errorString();
+    }
 }
 
-}  // namespace
+HttpServer::~HttpServer()
+{
+    m_streamTimer.stop();
 
-HttpServer::HttpServer() {
-  m_interpreter = nullptr;
-  m_server = new QHttpServer(this);
+    // Close all streaming clients
+    for (QTcpSocket *client : m_streamClients) {
+        client->close();
+    }
+    m_streamClients.clear();
 
-  // Setup route for serving snapshots at 'pixy2' with 'action=snapshot'
-  m_server->route("/pixy2/", [this](const QHttpServerRequest &request,
-                                    QHttpServerResponder &&responder) {
-    QUrlQuery query(request.url().query());
+    m_server->close();
+}
+
+void HttpServer::onNewConnection()
+{
+    while (m_server->hasPendingConnections()) {
+        QTcpSocket *client = m_server->nextPendingConnection();
+
+        connect(client, &QTcpSocket::readyRead,
+                this, &HttpServer::onClientReadyRead);
+        connect(client, &QTcpSocket::disconnected,
+                this, &HttpServer::onClientDisconnected);
+    }
+}
+
+void HttpServer::onClientReadyRead()
+{
+    QTcpSocket *client = qobject_cast<QTcpSocket*>(sender());
+    if (!client) return;
+
+    // Read the HTTP request
+    QByteArray requestData = client->readAll();
+    QString request = QString::fromUtf8(requestData);
+
+    // Parse first line to get the request path
+    QStringList lines = request.split("\r\n");
+    if (lines.isEmpty()) return;
+
+    QStringList requestLine = lines.first().split(" ");
+    if (requestLine.size() < 2) return;
+
+    QString path = requestLine[1];
+    handleRequest(client, path);
+}
+
+void HttpServer::onClientDisconnected()
+{
+    QTcpSocket *client = qobject_cast<QTcpSocket*>(sender());
+    if (!client) return;
+
+    // Remove from stream clients if present
+    m_streamClients.removeAll(client);
+
+    // Stop timer if no more stream clients
+    if (m_streamClients.isEmpty()) {
+        m_streamTimer.stop();
+    }
+
+    client->deleteLater();
+}
+
+void HttpServer::handleRequest(QTcpSocket *client, const QString &path)
+{
+    QUrl url(path);
+    QUrlQuery query(url.query());
     QString action = query.queryItemValue("action");
 
-    if (action == "snapshot") {
-      if (m_interpreter && m_interpreter->m_renderer) {
-        // Get the image directly from the renderer
-        QImage *backgroundImage = m_interpreter->m_renderer->backgroundImage();
-        QByteArray byteArray = qImageToQByteArray(*backgroundImage);
-
-        // Send the converted image as a byte array to the client
-        responder.write(byteArray, "image/jpeg");
-      } else {
-        // Respond with an error message if the frame is not available
-        responder.write(QByteArray("Snapshot not available"), "text/plain",
-                        QHttpServerResponder::StatusCode::NotFound);
-      }
-    } else if (action == "stream") {
-      if (m_interpreter && m_interpreter->m_renderer) {
-        // Start streaming
-        if (!startStreaming()) {
-          responder.write(QByteArray("Failed to start stream"), "text/plain",
-                          QHttpServerResponder::StatusCode::InternalServerError);
-          return;
-        }
-
-        // Keep serving frames while the ffmpeg process is running
-        while (m_ffmpeg.isOpen()) {
-          QImage *backgroundImage =
-              m_interpreter->m_renderer->backgroundImage();
-
-          // Write frame to stdin
-          QByteArray frameData = qImageToQByteArray(*backgroundImage);
-          m_ffmpeg.write(frameData);
-          m_ffmpeg.waitForBytesWritten();
-
-          // Read encoded frame from stdout
-          QByteArray encodedFrame = m_ffmpeg.readAllStandardOutput();
-          if (!encodedFrame.isEmpty()) {
-            responder.write(encodedFrame, "image/jpeg");
-          }
-
-          QThread::msleep(16); // Control frame rate
-        }
-      } else {
-        // Respond with an error message if the frame is not available
-        responder.write(QByteArray("Stream not available"), "text/plain",
-                        QHttpServerResponder::StatusCode::NotFound);
-      }
-    } else {
-      responder.write(QByteArray("Invalid request"), "text/plain",
-                      QHttpServerResponder::StatusCode::BadRequest);
+    // Check if this is a request to /pixy2/
+    if (!url.path().startsWith("/pixy2")) {
+        // Send 404 for unknown paths
+        QByteArray response =
+            "HTTP/1.1 404 Not Found\r\n"
+            "Content-Type: text/plain\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            "Not Found. Use /pixy2/?action=snapshot or /pixy2/?action=stream";
+        client->write(response);
+        client->flush();
+        client->close();
+        return;
     }
-  });
 
-  // Start listening
-  m_server->listen(QHostAddress::Any, 8080);
+    if (action == "snapshot") {
+        sendSnapshot(client);
+    } else if (action == "stream") {
+        startMjpegStream(client);
+    } else {
+        // Default: show usage info
+        QByteArray body =
+            "Pixy2 HTTP Stream Server\n"
+            "========================\n"
+            "Endpoints:\n"
+            "  /pixy2/?action=snapshot  - Get single JPEG frame\n"
+            "  /pixy2/?action=stream    - MJPEG stream (for OctoPrint)\n";
+
+        QByteArray response =
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/plain\r\n"
+            "Content-Length: " + QByteArray::number(body.size()) + "\r\n"
+            "Connection: close\r\n"
+            "\r\n" + body;
+
+        client->write(response);
+        client->flush();
+        client->close();
+    }
 }
 
-HttpServer::~HttpServer() {
-  // Stop the ffmpeg process
-  stopStreaming();
+QByteArray HttpServer::captureJpegFrame()
+{
+    if (!m_interpreter || !m_interpreter->m_renderer) {
+        return QByteArray();
+    }
 
-  delete m_server;
-  m_server = nullptr;
+    QImage *image = m_interpreter->m_renderer->backgroundImage();
+    if (!image || image->isNull()) {
+        return QByteArray();
+    }
+
+    QByteArray jpegData;
+    QBuffer buffer(&jpegData);
+    buffer.open(QIODevice::WriteOnly);
+    image->save(&buffer, "JPEG", 85);
+
+    return jpegData;
 }
 
-bool HttpServer::startStreaming() {
-  // Guard against multiple streams
-  if (m_ffmpeg.isOpen()) {
-    return false;
-  }
+void HttpServer::sendSnapshot(QTcpSocket *client)
+{
+    QByteArray jpegData = captureJpegFrame();
 
-  m_ffmpeg.start("ffmpeg", QStringList() << "-f"
-                                         << "rawvideo"
-                                         << "-pixel_format"
-                                         << "rgb24"
-                                         << "-video_size"
-                                         << "316x208"
-                                         << "-i"
-                                         << "-"
-                                         << "-f"
-                                         << "mjpeg"
-                                         << "pipe:1");
+    if (jpegData.isEmpty()) {
+        QByteArray response =
+            "HTTP/1.1 503 Service Unavailable\r\n"
+            "Content-Type: text/plain\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            "No frame available. Is Pixy connected?";
+        client->write(response);
+        client->flush();
+        client->close();
+        return;
+    }
 
-  return m_ffmpeg.isOpen();
+    QByteArray response =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: image/jpeg\r\n"
+        "Content-Length: " + QByteArray::number(jpegData.size()) + "\r\n"
+        "Cache-Control: no-cache\r\n"
+        "Connection: close\r\n"
+        "\r\n";
+
+    client->write(response);
+    client->write(jpegData);
+    client->flush();
+    client->close();
 }
 
-void HttpServer::stopStreaming() {
-  if (m_ffmpeg.isOpen()) {
-    m_ffmpeg.kill();
-    m_ffmpeg.waitForFinished();
-  }
+void HttpServer::startMjpegStream(QTcpSocket *client)
+{
+    if (!m_interpreter || !m_interpreter->m_renderer) {
+        QByteArray response =
+            "HTTP/1.1 503 Service Unavailable\r\n"
+            "Content-Type: text/plain\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            "Stream not available. Is Pixy connected?";
+        client->write(response);
+        client->flush();
+        client->close();
+        return;
+    }
+
+    // Send MJPEG stream headers
+    QByteArray response =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: multipart/x-mixed-replace; boundary=" + MJPEG_BOUNDARY + "\r\n"
+        "Cache-Control: no-cache, no-store, must-revalidate\r\n"
+        "Pragma: no-cache\r\n"
+        "Connection: keep-alive\r\n"
+        "\r\n";
+
+    client->write(response);
+    client->flush();
+
+    // Add to stream clients
+    m_streamClients.append(client);
+
+    // Capture first frame immediately if we don't have one cached
+    QImage *currentFrame = m_interpreter->m_renderer->backgroundImage();
+    if (currentFrame && !currentFrame->isNull() &&
+        (m_cachedJpeg.isEmpty() || currentFrame != m_lastFramePtr)) {
+        m_lastFramePtr = currentFrame;
+        m_cachedJpeg.clear();
+        QBuffer buffer(&m_cachedJpeg);
+        buffer.open(QIODevice::WriteOnly);
+        currentFrame->save(&buffer, "JPEG", 85);
+    }
+
+    // Send first frame immediately
+    sendMjpegFrame(client);
+
+    // Start timer if not already running (60 FPS)
+    if (!m_streamTimer.isActive()) {
+        m_streamTimer.start(16);  // ~60 FPS (Pixy supports up to 61)
+    }
+}
+
+void HttpServer::sendMjpegFrame(QTcpSocket *client)
+{
+    if (!client->isOpen() || m_cachedJpeg.isEmpty()) return;
+
+    // MJPEG frame format using cached JPEG
+    QByteArray frame =
+        "--" + MJPEG_BOUNDARY + "\r\n"
+        "Content-Type: image/jpeg\r\n"
+        "Content-Length: " + QByteArray::number(m_cachedJpeg.size()) + "\r\n"
+        "\r\n";
+
+    client->write(frame);
+    client->write(m_cachedJpeg);
+    client->write("\r\n");
+    client->flush();
+}
+
+void HttpServer::streamFrame()
+{
+    // Check if we have a new frame to send
+    if (!m_interpreter || !m_interpreter->m_renderer) {
+        return;
+    }
+
+    QImage *currentFrame = m_interpreter->m_renderer->backgroundImage();
+
+    // Only encode if frame pointer changed (new frame from Pixy)
+    if (currentFrame != m_lastFramePtr && currentFrame && !currentFrame->isNull()) {
+        m_lastFramePtr = currentFrame;
+
+        // Encode new frame to JPEG
+        m_cachedJpeg.clear();
+        QBuffer buffer(&m_cachedJpeg);
+        buffer.open(QIODevice::WriteOnly);
+        currentFrame->save(&buffer, "JPEG", 85);
+    }
+
+    // If no cached frame, nothing to send
+    if (m_cachedJpeg.isEmpty()) {
+        return;
+    }
+
+    // Send cached frame to all connected stream clients
+    QList<QTcpSocket*> disconnected;
+
+    for (QTcpSocket *client : m_streamClients) {
+        if (client->state() == QAbstractSocket::ConnectedState) {
+            // Check socket buffer - skip if backing up
+            if (client->bytesToWrite() < 100000) {
+                sendMjpegFrame(client);
+            }
+        } else {
+            disconnected.append(client);
+        }
+    }
+
+    // Clean up disconnected clients
+    for (QTcpSocket *client : disconnected) {
+        m_streamClients.removeAll(client);
+        client->deleteLater();
+    }
+
+    // Stop timer if no clients left
+    if (m_streamClients.isEmpty()) {
+        m_streamTimer.stop();
+    }
 }

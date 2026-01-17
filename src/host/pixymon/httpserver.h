@@ -2,19 +2,19 @@
 #define HTTPSERVER_H
 
 #include <QObject>
-#include <QProcess>
+#include <QList>
+#include <QTimer>
 
 class Interpreter;
-class QHttpServer;
-class QHttpServerRequest;
-class QHttpServerResponse;
+class QTcpServer;
+class QTcpSocket;
 
 class HttpServer : public QObject
 {
     Q_OBJECT
 
 public:
-    HttpServer();
+    HttpServer(quint16 port = 8080);
     ~HttpServer();
 
     void setInterpreter(Interpreter *interpreter)
@@ -22,14 +22,29 @@ public:
         m_interpreter = interpreter;
     }
 
+private slots:
+    void onNewConnection();
+    void onClientReadyRead();
+    void onClientDisconnected();
+    void streamFrame();
+
 private:
-    bool startStreaming();
+    void handleRequest(QTcpSocket *client, const QString &request);
+    void sendSnapshot(QTcpSocket *client);
+    void startMjpegStream(QTcpSocket *client);
+    void sendMjpegFrame(QTcpSocket *client);
+    QByteArray captureJpegFrame();
 
-    void stopStreaming();
-
-    QHttpServer *m_server;
+    QTcpServer *m_server;
     Interpreter *m_interpreter;
-    QProcess m_ffmpeg;
+    QList<QTcpSocket*> m_streamClients;
+    QTimer m_streamTimer;
+
+    // Frame caching to avoid duplicate encoding
+    QImage *m_lastFramePtr;
+    QByteArray m_cachedJpeg;
+
+    static const QByteArray MJPEG_BOUNDARY;
 };
 
 #endif // HTTPSERVER_H
