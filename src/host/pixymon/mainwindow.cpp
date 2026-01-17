@@ -41,7 +41,7 @@
 
 extern ChirpProc c_grabFrame;
 
-constexpr int k_serverPortNumber = 8082;
+constexpr int k_defaultServerPort = 8082;
 
 MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     QMainWindow(parent),
@@ -110,7 +110,9 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     if (m_connect->getConnected()==NONE)
         error("No Pixy devices have been detected.\n");
 
-    m_httpServer = new HttpServer(k_serverPortNumber);
+    // Start HTTP server for MJPEG streaming (port configurable via QSettings)
+    int serverPort = m_settings->value("http_server_port", k_defaultServerPort).toInt();
+    m_httpServer = new HttpServer(static_cast<quint16>(serverPort));
 }
 
 MainWindow::~MainWindow()
