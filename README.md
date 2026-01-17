@@ -58,6 +58,41 @@ http_server_port=8082
 
 **Windows**: Registry at `HKEY_CURRENT_USER\Software\Charmed Labs LLC\PixyMon`
 
+### Firewall Configuration
+
+To access the stream from other devices on your network, you may need to open the HTTP server port in your firewall.
+
+**Linux (ufw)**:
+
+```bash
+sudo ufw allow 8082/tcp
+```
+
+**Linux (firewalld)**:
+
+```bash
+sudo firewall-cmd --permanent --add-port=8082/tcp
+sudo firewall-cmd --reload
+```
+
+**Linux (iptables)**:
+
+```bash
+sudo iptables -A INPUT -p tcp --dport 8082 -j ACCEPT
+```
+
+**macOS**:
+
+The macOS firewall typically allows outgoing connections. If you have the firewall enabled, go to System Preferences > Security & Privacy > Firewall > Firewall Options, and add PixyMon to the allowed applications.
+
+**Windows**:
+
+```powershell
+netsh advfirewall firewall add rule name="PixyMon HTTP" dir=in action=allow protocol=tcp localport=8082
+```
+
+Or via Windows Defender Firewall GUI: allow inbound connections on TCP port 8082.
+
 ### Headless Operation
 
 To run PixyMon without a display (e.g., on a headless server):
