@@ -111,10 +111,8 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     if (m_connect->getConnected()==NONE)
         error("No Pixy devices have been detected.\n");
 
-    // Start HTTP server for MJPEG streaming
-    // Priority: command line --port > QSettings > default
-    int serverPort = (m_httpPort > 0) ? m_httpPort
-                   : m_settings->value("http_server_port", k_defaultServerPort).toInt();
+    // Start HTTP server for MJPEG streaming (use --port flag or default)
+    int serverPort = (m_httpPort > 0) ? m_httpPort : k_defaultServerPort;
     m_httpServer = new HttpServer(static_cast<quint16>(serverPort));
 }
 
