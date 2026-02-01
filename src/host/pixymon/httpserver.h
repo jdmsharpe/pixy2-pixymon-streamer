@@ -40,8 +40,7 @@ private:
     QList<QTcpSocket*> m_streamClients;
     QTimer m_streamTimer;
 
-    // Frame caching to avoid duplicate encoding
-    QImage *m_lastFramePtr;
+    // Cached JPEG frame (encode once, send to all clients)
     QByteArray m_cachedJpeg;
 
     static const QByteArray MJPEG_BOUNDARY;

@@ -15,7 +15,6 @@ const QByteArray HttpServer::MJPEG_BOUNDARY = "----pixyframe";
 HttpServer::HttpServer(quint16 port)
 {
     m_interpreter = nullptr;
-    m_lastFramePtr = nullptr;
     m_server = new QTcpServer(this);
 
     connect(m_server, &QTcpServer::newConnection,
@@ -220,19 +219,15 @@ void HttpServer::startMjpegStream(QTcpSocket *client)
     // Add to stream clients
     m_streamClients.append(client);
 
-    // Capture first frame immediately if we don't have one cached
+    // Capture and send first frame immediately
     QImage *currentFrame = m_interpreter->m_renderer->backgroundImage();
-    if (currentFrame && !currentFrame->isNull() &&
-        (m_cachedJpeg.isEmpty() || currentFrame != m_lastFramePtr)) {
-        m_lastFramePtr = currentFrame;
+    if (currentFrame && !currentFrame->isNull()) {
         m_cachedJpeg.clear();
         QBuffer buffer(&m_cachedJpeg);
         buffer.open(QIODevice::WriteOnly);
         currentFrame->save(&buffer, "JPEG", 85);
+        sendMjpegFrame(client);
     }
-
-    // Send first frame immediately
-    sendMjpegFrame(client);
 
     // Start timer if not already running (60 FPS)
     if (!m_streamTimer.isActive()) {
@@ -259,28 +254,21 @@ void HttpServer::sendMjpegFrame(QTcpSocket *client)
 
 void HttpServer::streamFrame()
 {
-    // Check if we have a new frame to send
+    // Check if we have a renderer
     if (!m_interpreter || !m_interpreter->m_renderer) {
         return;
     }
 
     QImage *currentFrame = m_interpreter->m_renderer->backgroundImage();
-
-    // Only encode if frame pointer changed (new frame from Pixy)
-    if (currentFrame != m_lastFramePtr && currentFrame && !currentFrame->isNull()) {
-        m_lastFramePtr = currentFrame;
-
-        // Encode new frame to JPEG
-        m_cachedJpeg.clear();
-        QBuffer buffer(&m_cachedJpeg);
-        buffer.open(QIODevice::WriteOnly);
-        currentFrame->save(&buffer, "JPEG", 85);
-    }
-
-    // If no cached frame, nothing to send
-    if (m_cachedJpeg.isEmpty()) {
+    if (!currentFrame || currentFrame->isNull()) {
         return;
     }
+
+    // Encode frame to JPEG (renderer reuses same QImage, so encode every tick)
+    m_cachedJpeg.clear();
+    QBuffer buffer(&m_cachedJpeg);
+    buffer.open(QIODevice::WriteOnly);
+    currentFrame->save(&buffer, "JPEG", 85);
 
     // Send cached frame to all connected stream clients
     QList<QTcpSocket*> disconnected;
