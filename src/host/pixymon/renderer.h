@@ -47,7 +47,7 @@ public:
     virtual void paramChange();
 
     int renderBackground(uint8_t renderFlags);
-    QImage *backgroundImage(); // get background from BA81 formatted image data
+    QImage backgroundImage(); // get background from BA81 formatted image data (thread-safe copy)
     Frame8 *backgroundRaw();
 
     int renderCCQ1(uint8_t renderFlags, uint16_t width, uint16_t height, uint32_t numVals, uint32_t *qVals);
@@ -84,6 +84,7 @@ private:
 
     Interpreter *m_interpreter;
     QImage m_background;
+    QMutex m_backgroundMutex;
     bool m_paletteSet;
     uint32_t m_palette[PALETTE_SIZE];
     static const unsigned int m_defaultPalette[PALETTE_SIZE];

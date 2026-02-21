@@ -145,15 +145,15 @@ QByteArray HttpServer::captureJpegFrame()
         return QByteArray();
     }
 
-    QImage *image = m_interpreter->m_renderer->backgroundImage();
-    if (!image || image->isNull()) {
+    QImage image = m_interpreter->m_renderer->backgroundImage();
+    if (image.isNull()) {
         return QByteArray();
     }
 
     QByteArray jpegData;
     QBuffer buffer(&jpegData);
     buffer.open(QIODevice::WriteOnly);
-    image->save(&buffer, "JPEG", 85);
+    image.save(&buffer, "JPEG", 85);
 
     return jpegData;
 }
@@ -220,12 +220,12 @@ void HttpServer::startMjpegStream(QTcpSocket *client)
     m_streamClients.append(client);
 
     // Capture and send first frame immediately
-    QImage *currentFrame = m_interpreter->m_renderer->backgroundImage();
-    if (currentFrame && !currentFrame->isNull()) {
+    QImage currentFrame = m_interpreter->m_renderer->backgroundImage();
+    if (!currentFrame.isNull()) {
         m_cachedJpeg.clear();
         QBuffer buffer(&m_cachedJpeg);
         buffer.open(QIODevice::WriteOnly);
-        currentFrame->save(&buffer, "JPEG", 85);
+        currentFrame.save(&buffer, "JPEG", 85);
         sendMjpegFrame(client);
     }
 
@@ -259,16 +259,16 @@ void HttpServer::streamFrame()
         return;
     }
 
-    QImage *currentFrame = m_interpreter->m_renderer->backgroundImage();
-    if (!currentFrame || currentFrame->isNull()) {
+    QImage currentFrame = m_interpreter->m_renderer->backgroundImage();
+    if (currentFrame.isNull()) {
         return;
     }
 
-    // Encode frame to JPEG (renderer reuses same QImage, so encode every tick)
+    // Encode frame to JPEG
     m_cachedJpeg.clear();
     QBuffer buffer(&m_cachedJpeg);
     buffer.open(QIODevice::WriteOnly);
-    currentFrame->save(&buffer, "JPEG", 85);
+    currentFrame.save(&buffer, "JPEG", 85);
 
     // Send cached frame to all connected stream clients
     QList<QTcpSocket*> disconnected;

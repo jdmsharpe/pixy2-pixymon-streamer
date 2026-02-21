@@ -327,7 +327,9 @@ int Renderer::renderBA81(uint8_t renderFlags, uint16_t width, uint16_t height, u
     // from chirp thread to gui thread
     emit image(img, renderFlags, "Background");
 
+    m_backgroundMutex.lock();
     m_background = img;
+    m_backgroundMutex.unlock();
 
     return 0;
 }
@@ -564,9 +566,10 @@ int Renderer::saveBackgroundImage(const QString &filename)
 }
 
 
-QImage *Renderer::backgroundImage()
+QImage Renderer::backgroundImage()
 {
-    return &m_background;
+    QMutexLocker locker(&m_backgroundMutex);
+    return m_background;
 }
 
 Frame8 *Renderer::backgroundRaw()
