@@ -4,6 +4,7 @@
 #include <QImage>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QStringList>
 #include <QUrlQuery>
 #include <QUrl>
 
@@ -16,6 +17,8 @@ HttpServer::HttpServer(quint16 port)
 {
     m_interpreter = nullptr;
     m_server = new QTcpServer(this);
+    m_lastFrameFingerprint = 0;
+    m_hasFrameFingerprint = false;
 
     connect(m_server, &QTcpServer::newConnection,
             this, &HttpServer::onNewConnection);
@@ -44,6 +47,21 @@ HttpServer::~HttpServer()
     m_server->close();
 }
 
+void HttpServer::setInterpreter(Interpreter *interpreter)
+{
+    m_interpreter = interpreter;
+
+    if (!m_interpreter) {
+        m_streamTimer.stop();
+
+        for (QTcpSocket *client : m_streamClients) {
+            client->close();
+        }
+        m_streamClients.clear();
+        m_cachedJpeg.clear();
+    }
+}
+
 void HttpServer::onNewConnection()
 {
     while (m_server->hasPendingConnections()) {
@@ -61,19 +79,59 @@ void HttpServer::onClientReadyRead()
     QTcpSocket *client = qobject_cast<QTcpSocket*>(sender());
     if (!client) return;
 
-    // Read the HTTP request
-    QByteArray requestData = client->readAll();
-    QString request = QString::fromUtf8(requestData);
+    // Ignore read activity from established stream clients.
+    if (m_streamClients.contains(client)) {
+        client->readAll();
+        return;
+    }
 
-    // Parse first line to get the request path
-    QStringList lines = request.split("\r\n");
-    if (lines.isEmpty()) return;
+    QByteArray &buffer = m_requestBuffers[client];
+    buffer.append(client->readAll());
 
-    QStringList requestLine = lines.first().split(" ");
-    if (requestLine.size() < 2) return;
+    if (buffer.size() > MAX_HEADER_SIZE) {
+        sendBadRequest(client, "Request header too large");
+        m_requestBuffers.remove(client);
+        client->close();
+        return;
+    }
 
-    QString path = requestLine[1];
-    handleRequest(client, path);
+    const int headerEnd = buffer.indexOf("\r\n\r\n");
+    if (headerEnd == -1) {
+        // Wait for complete headers.
+        return;
+    }
+
+    QByteArray headerData = buffer.left(headerEnd);
+    m_requestBuffers.remove(client);
+
+    const int firstLineEnd = headerData.indexOf("\r\n");
+    QByteArray requestLineBytes = firstLineEnd == -1 ? headerData : headerData.left(firstLineEnd);
+    QString requestLine = QString::fromLatin1(requestLineBytes).trimmed();
+
+    QStringList requestLineParts = requestLine.split(' ', Qt::SkipEmptyParts);
+    if (requestLineParts.size() != 3) {
+        sendBadRequest(client, "Malformed request line");
+        client->close();
+        return;
+    }
+
+    const QString method = requestLineParts[0];
+    const QString path = requestLineParts[1];
+    const QString version = requestLineParts[2];
+
+    if (method != "GET") {
+        sendBadRequest(client, "Only GET is supported");
+        client->close();
+        return;
+    }
+
+    if (!(version == "HTTP/1.1" || version == "HTTP/1.0")) {
+        sendBadRequest(client, "Unsupported HTTP version");
+        client->close();
+        return;
+    }
+
+    handleRequest(client, method, path, version);
 }
 
 void HttpServer::onClientDisconnected()
@@ -83,6 +141,7 @@ void HttpServer::onClientDisconnected()
 
     // Remove from stream clients if present
     m_streamClients.removeAll(client);
+    m_requestBuffers.remove(client);
 
     // Stop timer if no more stream clients
     if (m_streamClients.isEmpty()) {
@@ -92,9 +151,15 @@ void HttpServer::onClientDisconnected()
     client->deleteLater();
 }
 
-void HttpServer::handleRequest(QTcpSocket *client, const QString &path)
+void HttpServer::handleRequest(QTcpSocket *client, const QString &, const QString &path, const QString &)
 {
     QUrl url(path);
+    if (!url.isValid()) {
+        sendBadRequest(client, "Malformed URL");
+        client->close();
+        return;
+    }
+
     QUrlQuery query(url.query());
     QString action = query.queryItemValue("action");
 
@@ -137,6 +202,20 @@ void HttpServer::handleRequest(QTcpSocket *client, const QString &path)
         client->flush();
         client->close();
     }
+}
+
+void HttpServer::sendBadRequest(QTcpSocket *client, const QByteArray &message)
+{
+    QByteArray body = "Bad Request: " + message + "\n";
+    QByteArray response =
+        "HTTP/1.1 400 Bad Request\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: " + QByteArray::number(body.size()) + "\r\n"
+        "Connection: close\r\n"
+        "\r\n" + body;
+
+    client->write(response);
+    client->flush();
 }
 
 QByteArray HttpServer::captureJpegFrame()
@@ -216,16 +295,17 @@ void HttpServer::startMjpegStream(QTcpSocket *client)
     client->write(response);
     client->flush();
 
+    m_requestBuffers.remove(client);
+
     // Add to stream clients
-    m_streamClients.append(client);
+    if (!m_streamClients.contains(client)) {
+        m_streamClients.append(client);
+    }
 
     // Capture and send first frame immediately
     QImage currentFrame = m_interpreter->m_renderer->backgroundImage();
     if (!currentFrame.isNull()) {
-        m_cachedJpeg.clear();
-        QBuffer buffer(&m_cachedJpeg);
-        buffer.open(QIODevice::WriteOnly);
-        currentFrame.save(&buffer, "JPEG", 85);
+        cacheJpegFrame(currentFrame);
         sendMjpegFrame(client);
     }
 
@@ -256,6 +336,9 @@ void HttpServer::streamFrame()
 {
     // Check if we have a renderer
     if (!m_interpreter || !m_interpreter->m_renderer) {
+        if (m_streamTimer.isActive()) {
+            m_streamTimer.stop();
+        }
         return;
     }
 
@@ -264,11 +347,13 @@ void HttpServer::streamFrame()
         return;
     }
 
-    // Encode frame to JPEG
-    m_cachedJpeg.clear();
-    QBuffer buffer(&m_cachedJpeg);
-    buffer.open(QIODevice::WriteOnly);
-    currentFrame.save(&buffer, "JPEG", 85);
+    // Encode only when frame content changed, otherwise keep cached JPEG
+    quint64 currentFingerprint = frameFingerprint(currentFrame);
+    if (!m_hasFrameFingerprint || currentFingerprint != m_lastFrameFingerprint) {
+        cacheJpegFrame(currentFrame);
+        m_lastFrameFingerprint = currentFingerprint;
+        m_hasFrameFingerprint = true;
+    }
 
     // Send cached frame to all connected stream clients
     QList<QTcpSocket*> disconnected;
@@ -294,4 +379,37 @@ void HttpServer::streamFrame()
     if (m_streamClients.isEmpty()) {
         m_streamTimer.stop();
     }
+}
+
+quint64 HttpServer::frameFingerprint(const QImage &frame) const
+{
+    if (frame.isNull()) {
+        return 0;
+    }
+
+    const uchar *bits = frame.constBits();
+    const qsizetype size = frame.sizeInBytes();
+
+    // 64-bit FNV-1a over raw frame bytes
+    quint64 hash = 1469598103934665603ULL;
+    for (qsizetype i = 0; i < size; ++i) {
+        hash ^= static_cast<quint64>(bits[i]);
+        hash *= 1099511628211ULL;
+    }
+
+    hash ^= static_cast<quint64>(frame.width());
+    hash *= 1099511628211ULL;
+    hash ^= static_cast<quint64>(frame.height());
+    hash *= 1099511628211ULL;
+    hash ^= static_cast<quint64>(frame.format());
+
+    return hash;
+}
+
+void HttpServer::cacheJpegFrame(const QImage &frame)
+{
+    m_cachedJpeg.clear();
+    QBuffer buffer(&m_cachedJpeg);
+    buffer.open(QIODevice::WriteOnly);
+    frame.save(&buffer, "JPEG", 85);
 }

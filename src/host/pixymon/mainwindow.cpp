@@ -748,6 +748,8 @@ void MainWindow::on_actionConsole_triggered()
 void MainWindow::interpreterFinished()
 {
     DBG("interpreter finished");
+    if (m_httpServer)
+        m_httpServer->setInterpreter(nullptr);
     m_interpreter->deleteLater();
     m_interpreter = NULL;
     if (m_waiting==WAIT_EXITTING) // if we're exitting, shut down
