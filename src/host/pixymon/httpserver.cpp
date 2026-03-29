@@ -44,6 +44,21 @@ HttpServer::~HttpServer()
     m_server->close();
 }
 
+void HttpServer::setInterpreter(Interpreter *interpreter)
+{
+    m_interpreter = interpreter;
+
+    if (!m_interpreter) {
+        m_streamTimer.stop();
+
+        for (QTcpSocket *client : m_streamClients) {
+            client->close();
+        }
+        m_streamClients.clear();
+        m_cachedJpeg.clear();
+    }
+}
+
 void HttpServer::onNewConnection()
 {
     while (m_server->hasPendingConnections()) {
@@ -256,6 +271,9 @@ void HttpServer::streamFrame()
 {
     // Check if we have a renderer
     if (!m_interpreter || !m_interpreter->m_renderer) {
+        if (m_streamTimer.isActive()) {
+            m_streamTimer.stop();
+        }
         return;
     }
 

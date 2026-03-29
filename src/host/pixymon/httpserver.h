@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QList>
+#include <QPointer>
 #include <QTimer>
 
 class Interpreter;
@@ -17,10 +18,7 @@ public:
     HttpServer(quint16 port = 8080);
     ~HttpServer();
 
-    void setInterpreter(Interpreter *interpreter)
-    {
-        m_interpreter = interpreter;
-    }
+    void setInterpreter(Interpreter *interpreter);
 
 private slots:
     void onNewConnection();
@@ -36,7 +34,7 @@ private:
     QByteArray captureJpegFrame();
 
     QTcpServer *m_server;
-    Interpreter *m_interpreter;
+    QPointer<Interpreter> m_interpreter;
     QList<QTcpSocket*> m_streamClients;
     QTimer m_streamTimer;
 
