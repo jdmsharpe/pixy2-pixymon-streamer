@@ -217,7 +217,9 @@ void HttpServer::startMjpegStream(QTcpSocket *client)
     client->flush();
 
     // Add to stream clients
-    m_streamClients.append(client);
+    if (!m_streamClients.contains(client)) {
+        m_streamClients.append(client);
+    }
 
     // Capture and send first frame immediately
     QImage currentFrame = m_interpreter->m_renderer->backgroundImage();
