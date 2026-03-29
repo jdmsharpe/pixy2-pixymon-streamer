@@ -9,6 +9,7 @@
 #include <QtGlobal>
 
 class Interpreter;
+class QImage;
 class QTcpServer;
 class QTcpSocket;
 
@@ -29,21 +30,28 @@ private slots:
     void streamFrame();
 
 private:
-    void handleRequest(QTcpSocket *client, const QString &request);
+    void handleRequest(QTcpSocket *client, const QString &method, const QString &path, const QString &version);
+    void sendBadRequest(QTcpSocket *client, const QByteArray &message);
     void sendSnapshot(QTcpSocket *client);
     void startMjpegStream(QTcpSocket *client);
     void sendMjpegFrame(QTcpSocket *client);
     QByteArray captureJpegFrame();
+    quint64 frameFingerprint(const QImage &frame) const;
+    void cacheJpegFrame(const QImage &frame);
 
     QTcpServer *m_server;
     QPointer<Interpreter> m_interpreter;
     QList<QTcpSocket*> m_streamClients;
+    QHash<QTcpSocket*, QByteArray> m_requestBuffers;
     QTimer m_streamTimer;
 
     // Cached JPEG frame (encode once, send to all clients)
     QByteArray m_cachedJpeg;
+    quint64 m_lastFrameFingerprint;
+    bool m_hasFrameFingerprint;
 
     static const QByteArray MJPEG_BOUNDARY;
+    static const int MAX_HEADER_SIZE = 16 * 1024; // 16 KB
 };
 
 #endif // HTTPSERVER_H

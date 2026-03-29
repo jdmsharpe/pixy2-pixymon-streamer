@@ -327,9 +327,10 @@ int Renderer::renderBA81(uint8_t renderFlags, uint16_t width, uint16_t height, u
     // from chirp thread to gui thread
     emit image(img, renderFlags, "Background");
 
-    m_backgroundMutex.lock();
-    m_background = img;
-    m_backgroundMutex.unlock();
+    {
+        QMutexLocker locker(&m_backgroundMutex);
+        m_background = img;
+    }
 
     return 0;
 }
@@ -338,7 +339,12 @@ void Renderer::renderRects(const Points &points, uint32_t size)
 {
     int i;
     QPainter p;
-    float scale = (float)m_video->activeWidth()/m_background.width();
+    QImage background;
+    {
+        QMutexLocker locker(&m_backgroundMutex);
+        background = m_background;
+    }
+    float scale = (float)m_video->activeWidth()/background.width();
     QImage img(m_video->activeWidth(), m_video->activeHeight(), QImage::Format_ARGB32);
     img.fill(0x00000000);
 
@@ -359,7 +365,12 @@ void Renderer::renderRects(const Points &points, uint32_t size)
 void Renderer::renderRect(const RectA &rect)
 {
     QPainter p;
-    float scale = (float)m_video->activeWidth()/m_background.width();
+    QImage background;
+    {
+        QMutexLocker locker(&m_backgroundMutex);
+        background = m_background;
+    }
+    float scale = (float)m_video->activeWidth()/background.width();
     QImage img(m_video->activeWidth(), m_video->activeHeight(), QImage::Format_ARGB32);
     img.fill(0x00000000);
 
@@ -526,6 +537,11 @@ void Renderer::pixelsOut(int x0, int y0, int width, int height)
     uint pixel, *line;
     uint r, g, b;
     int x, y;
+    QImage background;
+    {
+        QMutexLocker locker(&m_backgroundMutex);
+        background = m_background;
+    }
 
     DataExport dx(m_interpreter->m_pixymonParameters->value("Document folder").toString(), "pixels", ET_MATLAB);
 
@@ -533,7 +549,7 @@ void Renderer::pixelsOut(int x0, int y0, int width, int height)
 
     for (y=0; y<height; y++)
     {
-        line = (unsigned int *)m_background.scanLine(y0+y);
+        line = (unsigned int *)background.scanLine(y0+y);
         for (x=0; x<width; x++)
         {
             pixel = line[x0+x];
@@ -554,15 +570,25 @@ void Renderer::pixelsOut(int x0, int y0, int width, int height)
 
 int Renderer::renderBackground(uint8_t renderFlags)
 {
-    if (m_background.width()!=0)
-        emit image(m_background, renderFlags, "Background");
+    QImage background;
+    {
+        QMutexLocker locker(&m_backgroundMutex);
+        background = m_background;
+    }
+    if (background.width()!=0)
+        emit image(background, renderFlags, "Background");
 
     return 0;
 }
 
 int Renderer::saveBackgroundImage(const QString &filename)
 {
-    return m_background.save(filename);
+    QImage background;
+    {
+        QMutexLocker locker(&m_backgroundMutex);
+        background = m_background;
+    }
+    return background.save(filename);
 }
 
 
