@@ -4,8 +4,10 @@
 #include <QObject>
 #include <QList>
 #include <QTimer>
+#include <QtGlobal>
 
 class Interpreter;
+class QImage;
 class QTcpServer;
 class QTcpSocket;
 
@@ -34,6 +36,8 @@ private:
     void startMjpegStream(QTcpSocket *client);
     void sendMjpegFrame(QTcpSocket *client);
     QByteArray captureJpegFrame();
+    quint64 frameFingerprint(const QImage &frame) const;
+    void cacheJpegFrame(const QImage &frame);
 
     QTcpServer *m_server;
     Interpreter *m_interpreter;
@@ -42,6 +46,8 @@ private:
 
     // Cached JPEG frame (encode once, send to all clients)
     QByteArray m_cachedJpeg;
+    quint64 m_lastFrameFingerprint;
+    bool m_hasFrameFingerprint;
 
     static const QByteArray MJPEG_BOUNDARY;
 };

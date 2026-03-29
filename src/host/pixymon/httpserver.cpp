@@ -16,6 +16,8 @@ HttpServer::HttpServer(quint16 port)
 {
     m_interpreter = nullptr;
     m_server = new QTcpServer(this);
+    m_lastFrameFingerprint = 0;
+    m_hasFrameFingerprint = false;
 
     connect(m_server, &QTcpServer::newConnection,
             this, &HttpServer::onNewConnection);
@@ -222,10 +224,7 @@ void HttpServer::startMjpegStream(QTcpSocket *client)
     // Capture and send first frame immediately
     QImage currentFrame = m_interpreter->m_renderer->backgroundImage();
     if (!currentFrame.isNull()) {
-        m_cachedJpeg.clear();
-        QBuffer buffer(&m_cachedJpeg);
-        buffer.open(QIODevice::WriteOnly);
-        currentFrame.save(&buffer, "JPEG", 85);
+        cacheJpegFrame(currentFrame);
         sendMjpegFrame(client);
     }
 
@@ -264,11 +263,13 @@ void HttpServer::streamFrame()
         return;
     }
 
-    // Encode frame to JPEG
-    m_cachedJpeg.clear();
-    QBuffer buffer(&m_cachedJpeg);
-    buffer.open(QIODevice::WriteOnly);
-    currentFrame.save(&buffer, "JPEG", 85);
+    // Encode only when frame content changed, otherwise keep cached JPEG
+    quint64 currentFingerprint = frameFingerprint(currentFrame);
+    if (!m_hasFrameFingerprint || currentFingerprint != m_lastFrameFingerprint) {
+        cacheJpegFrame(currentFrame);
+        m_lastFrameFingerprint = currentFingerprint;
+        m_hasFrameFingerprint = true;
+    }
 
     // Send cached frame to all connected stream clients
     QList<QTcpSocket*> disconnected;
@@ -294,4 +295,37 @@ void HttpServer::streamFrame()
     if (m_streamClients.isEmpty()) {
         m_streamTimer.stop();
     }
+}
+
+quint64 HttpServer::frameFingerprint(const QImage &frame) const
+{
+    if (frame.isNull()) {
+        return 0;
+    }
+
+    const uchar *bits = frame.constBits();
+    const qsizetype size = frame.sizeInBytes();
+
+    // 64-bit FNV-1a over raw frame bytes
+    quint64 hash = 1469598103934665603ULL;
+    for (qsizetype i = 0; i < size; ++i) {
+        hash ^= static_cast<quint64>(bits[i]);
+        hash *= 1099511628211ULL;
+    }
+
+    hash ^= static_cast<quint64>(frame.width());
+    hash *= 1099511628211ULL;
+    hash ^= static_cast<quint64>(frame.height());
+    hash *= 1099511628211ULL;
+    hash ^= static_cast<quint64>(frame.format());
+
+    return hash;
+}
+
+void HttpServer::cacheJpegFrame(const QImage &frame)
+{
+    m_cachedJpeg.clear();
+    QBuffer buffer(&m_cachedJpeg);
+    buffer.open(QIODevice::WriteOnly);
+    frame.save(&buffer, "JPEG", 85);
 }
