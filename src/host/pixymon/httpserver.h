@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QList>
+#include <QHash>
 #include <QTimer>
 
 class Interpreter;
@@ -29,7 +30,8 @@ private slots:
     void streamFrame();
 
 private:
-    void handleRequest(QTcpSocket *client, const QString &request);
+    void handleRequest(QTcpSocket *client, const QString &method, const QString &path, const QString &version);
+    void sendBadRequest(QTcpSocket *client, const QByteArray &message);
     void sendSnapshot(QTcpSocket *client);
     void startMjpegStream(QTcpSocket *client);
     void sendMjpegFrame(QTcpSocket *client);
@@ -38,12 +40,14 @@ private:
     QTcpServer *m_server;
     Interpreter *m_interpreter;
     QList<QTcpSocket*> m_streamClients;
+    QHash<QTcpSocket*, QByteArray> m_requestBuffers;
     QTimer m_streamTimer;
 
     // Cached JPEG frame (encode once, send to all clients)
     QByteArray m_cachedJpeg;
 
     static const QByteArray MJPEG_BOUNDARY;
+    static const int MAX_HEADER_SIZE = 16 * 1024; // 16 KB
 };
 
 #endif // HTTPSERVER_H
