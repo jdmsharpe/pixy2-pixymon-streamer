@@ -2,9 +2,11 @@
 #define HTTPSERVER_H
 
 #include <QObject>
+#include <QHash>
 #include <QList>
 #include <QPointer>
 #include <QTimer>
+#include <QtGlobal>
 
 class Interpreter;
 class QTcpServer;
