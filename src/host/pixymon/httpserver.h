@@ -2,8 +2,9 @@
 #define HTTPSERVER_H
 
 #include <QObject>
-#include <QList>
 #include <QHash>
+#include <QList>
+#include <QPointer>
 #include <QTimer>
 #include <QtGlobal>
 
@@ -20,10 +21,7 @@ public:
     HttpServer(quint16 port = 8080);
     ~HttpServer();
 
-    void setInterpreter(Interpreter *interpreter)
-    {
-        m_interpreter = interpreter;
-    }
+    void setInterpreter(Interpreter *interpreter);
 
 private slots:
     void onNewConnection();
@@ -42,7 +40,7 @@ private:
     void cacheJpegFrame(const QImage &frame);
 
     QTcpServer *m_server;
-    Interpreter *m_interpreter;
+    QPointer<Interpreter> m_interpreter;
     QList<QTcpSocket*> m_streamClients;
     QHash<QTcpSocket*, QByteArray> m_requestBuffers;
     QTimer m_streamTimer;
