@@ -84,6 +84,7 @@ private:
 
     Interpreter *m_interpreter;
     QImage m_background;
+    // Guard all reads/writes of m_background with this mutex.
     QMutex m_backgroundMutex;
     bool m_paletteSet;
     uint32_t m_palette[PALETTE_SIZE];
