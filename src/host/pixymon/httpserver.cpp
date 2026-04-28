@@ -2,8 +2,11 @@
 
 #include <QBuffer>
 #include <QImage>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QTimer>
 #include <QStringList>
 #include <QUrlQuery>
 #include <QUrl>
@@ -13,7 +16,15 @@
 
 const QByteArray HttpServer::MJPEG_BOUNDARY = "----pixyframe";
 
-HttpServer::HttpServer(quint16 port)
+HttpServer::HttpServer(const Options &options, QObject *parent) :
+    QObject(parent),
+    m_bindAddress(options.bindAddress),
+    m_port(options.port),
+    m_fps(qMax(1, options.fps)),
+    m_frameIntervalMs(qMax(1, 1000 / qMax(1, options.fps))),
+    m_jpegQuality(options.jpegQuality),
+    m_maxClients(qMax(1, options.maxClients)),
+    m_requestTimeoutMs(qMax(1000, options.requestTimeoutMs))
 {
     m_interpreter = nullptr;
     m_server = new QTcpServer(this);
@@ -27,8 +38,8 @@ HttpServer::HttpServer(quint16 port)
     connect(&m_streamTimer, &QTimer::timeout,
             this, &HttpServer::streamFrame);
 
-    if (m_server->listen(QHostAddress::Any, port)) {
-        qDebug() << "HTTP server listening on port" << port;
+    if (m_server->listen(m_bindAddress, m_port)) {
+        qDebug() << "HTTP server listening on" << m_bindAddress.toString() << "port" << m_port;
     } else {
         qWarning() << "Failed to start HTTP server:" << m_server->errorString();
     }
@@ -38,11 +49,16 @@ HttpServer::~HttpServer()
 {
     m_streamTimer.stop();
 
-    // Close all streaming clients
-    for (QTcpSocket *client : m_streamClients) {
+    QList<QTcpSocket*> clients = m_clients;
+    for (QTcpSocket *client : clients) {
+        stopRequestTimer(client);
+        client->disconnect(this);
         client->close();
+        client->deleteLater();
     }
+    m_clients.clear();
     m_streamClients.clear();
+    m_requestBuffers.clear();
 
     m_server->close();
 }
@@ -59,6 +75,7 @@ void HttpServer::setInterpreter(Interpreter *interpreter)
         }
         m_streamClients.clear();
         m_cachedJpeg.clear();
+        m_hasFrameFingerprint = false;
     }
 }
 
@@ -67,10 +84,24 @@ void HttpServer::onNewConnection()
     while (m_server->hasPendingConnections()) {
         QTcpSocket *client = m_server->nextPendingConnection();
 
+        if (m_clients.size() >= m_maxClients) {
+            sendTextResponse(client, 503, "Service Unavailable",
+                             "Too many HTTP clients connected.\n");
+            client->disconnectFromHost();
+            client->deleteLater();
+            continue;
+        }
+
+        client->setParent(this);
+        m_clients.append(client);
+        m_requestBuffers.insert(client, QByteArray());
+
         connect(client, &QTcpSocket::readyRead,
                 this, &HttpServer::onClientReadyRead);
         connect(client, &QTcpSocket::disconnected,
                 this, &HttpServer::onClientDisconnected);
+
+        startRequestTimer(client);
     }
 }
 
@@ -91,7 +122,8 @@ void HttpServer::onClientReadyRead()
     if (buffer.size() > MAX_HEADER_SIZE) {
         sendBadRequest(client, "Request header too large");
         m_requestBuffers.remove(client);
-        client->close();
+        stopRequestTimer(client);
+        client->disconnectFromHost();
         return;
     }
 
@@ -103,6 +135,7 @@ void HttpServer::onClientReadyRead()
 
     QByteArray headerData = buffer.left(headerEnd);
     m_requestBuffers.remove(client);
+    stopRequestTimer(client);
 
     const int firstLineEnd = headerData.indexOf("\r\n");
     QByteArray requestLineBytes = firstLineEnd == -1 ? headerData : headerData.left(firstLineEnd);
@@ -111,7 +144,7 @@ void HttpServer::onClientReadyRead()
     QStringList requestLineParts = requestLine.split(' ', Qt::SkipEmptyParts);
     if (requestLineParts.size() != 3) {
         sendBadRequest(client, "Malformed request line");
-        client->close();
+        client->disconnectFromHost();
         return;
     }
 
@@ -121,13 +154,13 @@ void HttpServer::onClientReadyRead()
 
     if (method != "GET") {
         sendBadRequest(client, "Only GET is supported");
-        client->close();
+        client->disconnectFromHost();
         return;
     }
 
     if (!(version == "HTTP/1.1" || version == "HTTP/1.0")) {
         sendBadRequest(client, "Unsupported HTTP version");
-        client->close();
+        client->disconnectFromHost();
         return;
     }
 
@@ -140,8 +173,10 @@ void HttpServer::onClientDisconnected()
     if (!client) return;
 
     // Remove from stream clients if present
+    m_clients.removeAll(client);
     m_streamClients.removeAll(client);
     m_requestBuffers.remove(client);
+    stopRequestTimer(client);
 
     // Stop timer if no more stream clients
     if (m_streamClients.isEmpty()) {
@@ -156,25 +191,21 @@ void HttpServer::handleRequest(QTcpSocket *client, const QString &, const QStrin
     QUrl url(path);
     if (!url.isValid()) {
         sendBadRequest(client, "Malformed URL");
-        client->close();
+        client->disconnectFromHost();
         return;
     }
 
     QUrlQuery query(url.query());
     QString action = query.queryItemValue("action");
 
+    const QString urlPath = url.path();
+
     // Check if this is a request to /pixy2/
-    if (!url.path().startsWith("/pixy2")) {
+    if (!(urlPath == "/pixy2" || urlPath.startsWith("/pixy2/"))) {
         // Send 404 for unknown paths
-        QByteArray response =
-            "HTTP/1.1 404 Not Found\r\n"
-            "Content-Type: text/plain\r\n"
-            "Connection: close\r\n"
-            "\r\n"
-            "Not Found. Use /pixy2/?action=snapshot or /pixy2/?action=stream";
-        client->write(response);
-        client->flush();
-        client->close();
+        sendTextResponse(client, 404, "Not Found",
+                         "Not Found. Use /pixy2/?action=snapshot, /pixy2/?action=stream, or /pixy2/?action=status\n");
+        client->disconnectFromHost();
         return;
     }
 
@@ -182,6 +213,8 @@ void HttpServer::handleRequest(QTcpSocket *client, const QString &, const QStrin
         sendSnapshot(client);
     } else if (action == "stream") {
         startMjpegStream(client);
+    } else if (action == "status") {
+        sendStatus(client);
     } else {
         // Default: show usage info
         QByteArray body =
@@ -189,33 +222,37 @@ void HttpServer::handleRequest(QTcpSocket *client, const QString &, const QStrin
             "========================\n"
             "Endpoints:\n"
             "  /pixy2/?action=snapshot  - Get single JPEG frame\n"
-            "  /pixy2/?action=stream    - MJPEG stream (for OctoPrint)\n";
+            "  /pixy2/?action=stream    - MJPEG stream (for OctoPrint)\n"
+            "  /pixy2/?action=status    - JSON server and camera status\n";
 
-        QByteArray response =
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/plain\r\n"
-            "Content-Length: " + QByteArray::number(body.size()) + "\r\n"
-            "Connection: close\r\n"
-            "\r\n" + body;
-
-        client->write(response);
-        client->flush();
-        client->close();
+        sendTextResponse(client, 200, "OK", body);
+        client->disconnectFromHost();
     }
 }
 
 void HttpServer::sendBadRequest(QTcpSocket *client, const QByteArray &message)
 {
     QByteArray body = "Bad Request: " + message + "\n";
+    sendTextResponse(client, 400, "Bad Request", body);
+}
+
+void HttpServer::sendTextResponse(QTcpSocket *client, int statusCode, const QByteArray &reason,
+                                  const QByteArray &body, const QByteArray &contentType)
+{
     QByteArray response =
-        "HTTP/1.1 400 Bad Request\r\n"
-        "Content-Type: text/plain\r\n"
+        "HTTP/1.1 " + QByteArray::number(statusCode) + " " + reason + "\r\n"
+        "Content-Type: " + contentType + "\r\n"
         "Content-Length: " + QByteArray::number(body.size()) + "\r\n"
         "Connection: close\r\n"
         "\r\n" + body;
 
     client->write(response);
     client->flush();
+}
+
+void HttpServer::sendJsonResponse(QTcpSocket *client, const QByteArray &jsonData)
+{
+    sendTextResponse(client, 200, "OK", jsonData, "application/json");
 }
 
 QByteArray HttpServer::captureJpegFrame()
@@ -232,7 +269,7 @@ QByteArray HttpServer::captureJpegFrame()
     QByteArray jpegData;
     QBuffer buffer(&jpegData);
     buffer.open(QIODevice::WriteOnly);
-    image.save(&buffer, "JPEG", 85);
+    image.save(&buffer, "JPEG", m_jpegQuality);
 
     return jpegData;
 }
@@ -242,15 +279,9 @@ void HttpServer::sendSnapshot(QTcpSocket *client)
     QByteArray jpegData = captureJpegFrame();
 
     if (jpegData.isEmpty()) {
-        QByteArray response =
-            "HTTP/1.1 503 Service Unavailable\r\n"
-            "Content-Type: text/plain\r\n"
-            "Connection: close\r\n"
-            "\r\n"
-            "No frame available. Is Pixy connected?";
-        client->write(response);
-        client->flush();
-        client->close();
+        sendTextResponse(client, 503, "Service Unavailable",
+                         "No frame available. Is Pixy connected?\n");
+        client->disconnectFromHost();
         return;
     }
 
@@ -265,21 +296,49 @@ void HttpServer::sendSnapshot(QTcpSocket *client)
     client->write(response);
     client->write(jpegData);
     client->flush();
-    client->close();
+    client->disconnectFromHost();
+}
+
+void HttpServer::sendStatus(QTcpSocket *client)
+{
+    QImage frame;
+    if (m_interpreter && m_interpreter->m_renderer) {
+        frame = m_interpreter->m_renderer->backgroundImage();
+    }
+
+    QJsonObject server;
+    server["listening"] = m_server->isListening();
+    server["bindAddress"] = m_bindAddress.toString();
+    server["port"] = static_cast<int>(m_port);
+    server["fps"] = m_fps;
+    server["jpegQuality"] = m_jpegQuality;
+    server["maxClients"] = m_maxClients;
+    server["requestTimeoutMs"] = m_requestTimeoutMs;
+    server["clients"] = static_cast<int>(m_clients.size());
+    server["streamClients"] = static_cast<int>(m_streamClients.size());
+    server["cachedJpegBytes"] = static_cast<int>(m_cachedJpeg.size());
+
+    QJsonObject camera;
+    camera["pixyConnected"] = !m_interpreter.isNull();
+    camera["rendererAvailable"] = m_interpreter && m_interpreter->m_renderer;
+    camera["frameAvailable"] = !frame.isNull();
+    camera["frameWidth"] = frame.isNull() ? 0 : frame.width();
+    camera["frameHeight"] = frame.isNull() ? 0 : frame.height();
+
+    QJsonObject status;
+    status["server"] = server;
+    status["camera"] = camera;
+
+    sendJsonResponse(client, QJsonDocument(status).toJson(QJsonDocument::Compact) + "\n");
+    client->disconnectFromHost();
 }
 
 void HttpServer::startMjpegStream(QTcpSocket *client)
 {
     if (!m_interpreter || !m_interpreter->m_renderer) {
-        QByteArray response =
-            "HTTP/1.1 503 Service Unavailable\r\n"
-            "Content-Type: text/plain\r\n"
-            "Connection: close\r\n"
-            "\r\n"
-            "Stream not available. Is Pixy connected?";
-        client->write(response);
-        client->flush();
-        client->close();
+        sendTextResponse(client, 503, "Service Unavailable",
+                         "Stream not available. Is Pixy connected?\n");
+        client->disconnectFromHost();
         return;
     }
 
@@ -306,12 +365,14 @@ void HttpServer::startMjpegStream(QTcpSocket *client)
     QImage currentFrame = m_interpreter->m_renderer->backgroundImage();
     if (!currentFrame.isNull()) {
         cacheJpegFrame(currentFrame);
+        m_lastFrameFingerprint = frameFingerprint(currentFrame);
+        m_hasFrameFingerprint = true;
         sendMjpegFrame(client);
     }
 
-    // Start timer if not already running (60 FPS)
+    // Start timer if not already running.
     if (!m_streamTimer.isActive()) {
-        m_streamTimer.start(16);  // ~60 FPS (Pixy supports up to 61)
+        m_streamTimer.start(m_frameIntervalMs);
     }
 }
 
@@ -371,7 +432,10 @@ void HttpServer::streamFrame()
 
     // Clean up disconnected clients
     for (QTcpSocket *client : disconnected) {
+        m_clients.removeAll(client);
         m_streamClients.removeAll(client);
+        m_requestBuffers.remove(client);
+        stopRequestTimer(client);
         client->deleteLater();
     }
 
@@ -411,5 +475,39 @@ void HttpServer::cacheJpegFrame(const QImage &frame)
     m_cachedJpeg.clear();
     QBuffer buffer(&m_cachedJpeg);
     buffer.open(QIODevice::WriteOnly);
-    frame.save(&buffer, "JPEG", 85);
+    frame.save(&buffer, "JPEG", m_jpegQuality);
+}
+
+void HttpServer::startRequestTimer(QTcpSocket *client)
+{
+    if (m_requestTimeoutMs <= 0) {
+        return;
+    }
+
+    QTimer *timer = new QTimer(client);
+    timer->setSingleShot(true);
+    connect(timer, &QTimer::timeout, this, [this, client]() {
+        if (!m_clients.contains(client) || m_streamClients.contains(client)) {
+            return;
+        }
+
+        sendTextResponse(client, 408, "Request Timeout",
+                         "Request timed out waiting for complete headers.\n");
+        m_requestBuffers.remove(client);
+        client->disconnectFromHost();
+    });
+
+    m_requestTimers.insert(client, timer);
+    timer->start(m_requestTimeoutMs);
+}
+
+void HttpServer::stopRequestTimer(QTcpSocket *client)
+{
+    QTimer *timer = m_requestTimers.take(client);
+    if (!timer) {
+        return;
+    }
+
+    timer->stop();
+    timer->deleteLater();
 }

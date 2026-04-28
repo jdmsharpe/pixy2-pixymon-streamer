@@ -1,1 +1,22 @@
+# Normalize all text files to LF on commit
+* text=auto eol=lf
+
+# Keep release bundles, firmware, and media from being normalized as text.
+*.a binary
+*.bin binary
+*.dll binary
+*.dmg binary
+*.ev3 binary
+*.ev3b binary
+*.exe binary
+*.hdr binary
 *.hex binary
+*.icns binary
+*.ico binary
+*.jpg binary
+*.lib binary
+*.pdf binary
+*.png binary
+*.stl binary
+*.xls binary
+*.zip binary

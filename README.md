@@ -11,7 +11,7 @@ This project extends the official PixyMon application to serve the Pixy2 camera 
 - **60 FPS Support**: Matches Pixy2's maximum frame rate capability
 - **Frame Caching**: Efficient encoding - only re-encodes when frames change
 - **Multi-client Support**: Stream to multiple clients simultaneously
-- **Configurable Port**: Set the HTTP server port via `--port` flag
+- **Configurable HTTP Server**: Control bind address, port, FPS, JPEG quality, client limit, and request timeout
 
 ## HTTP Endpoints
 
@@ -19,6 +19,7 @@ This project extends the official PixyMon application to serve the Pixy2 camera 
 |---------------------------|------------------------------|
 | `/pixy2/?action=stream`   | MJPEG stream (for OctoPrint) |
 | `/pixy2/?action=snapshot` | Single JPEG frame            |
+| `/pixy2/?action=status`   | JSON server and camera status |
 | `/pixy2/`                 | Usage information            |
 
 ## Usage
@@ -31,7 +32,13 @@ This project extends the official PixyMon application to serve the Pixy2 camera 
 
 ### OctoPrint Integration
 
-In OctoPrint's webcam settings, set the stream URL to:
+The HTTP server binds to `127.0.0.1` by default. If OctoPrint runs on another device, start PixyMon with a LAN-facing bind address:
+
+```bash
+./PixyMon --bind 0.0.0.0
+```
+
+Then in OctoPrint's webcam settings, set the stream URL to:
 
 ```text
 http://<your-ip>:8082/pixy2/?action=stream
@@ -43,17 +50,31 @@ And the snapshot URL to:
 http://<your-ip>:8082/pixy2/?action=snapshot
 ```
 
-### Configuring the Server Port
+### HTTP Server Options
 
-The HTTP server port defaults to **8082**. You can change it via the `--port` flag:
+The defaults are local-only and conservative enough for printer monitoring:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--bind <address>` | `127.0.0.1` | Bind address. Use `0.0.0.0` or `any` for LAN access. |
+| `--port <port>` | `8082` | HTTP server port, from `1` to `65535`. |
+| `--fps <fps>` | `30` | MJPEG stream frame rate, from `1` to `60`. |
+| `--quality <quality>` | `85` | JPEG quality, from `1` to `100`. |
+| `--max-clients <count>` | `8` | Maximum simultaneous HTTP clients, from `1` to `64`. |
+| `--request-timeout-ms <ms>` | `5000` | Time allowed for complete HTTP request headers. |
+| `--disable-http` | off | Disable the HTTP snapshot/stream server. |
+
+Examples:
 
 ```bash
 ./PixyMon --port 9000
+./PixyMon --bind 0.0.0.0 --fps 15 --quality 80 --max-clients 4
+./PixyMon --disable-http
 ```
 
 ### Firewall Configuration
 
-To access the stream from other devices on your network, you may need to open the HTTP server port in your firewall.
+To access the stream from other devices on your network, run PixyMon with `--bind 0.0.0.0` or `--bind any`, then open the HTTP server port in your firewall.
 
 **Linux (ufw)**:
 
@@ -112,9 +133,8 @@ xvfb-run -a ./build/pixymon/PixyMon &
 sudo apt install qt6-base-dev libusb-1.0-0-dev
 
 # Build
-cd src/host/pixymon
-qmake6
-make
+cmake -S src/host/pixymon -B build/pixymon -DCMAKE_BUILD_TYPE=Release
+cmake --build build/pixymon --parallel
 ```
 
 ### macOS
@@ -124,9 +144,8 @@ make
 brew install qt@6 libusb
 
 # Build
-cd src/host/pixymon
-qmake6
-make
+cmake -S src/host/pixymon -B build/pixymon -DCMAKE_BUILD_TYPE=Release
+cmake --build build/pixymon --parallel
 ```
 
 ## Directory Structure

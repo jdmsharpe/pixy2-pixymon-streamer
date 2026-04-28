@@ -19,6 +19,10 @@
 #include <QFileDialog>
 #include <QMetaType>
 #include <QSettings>
+#include <QCommandLineOption>
+#include <QCommandLineParser>
+#include <QCoreApplication>
+#include <QDebug>
 #include <QUrl>
 #include <QDesktopServices>
 #include <QSysInfo>
@@ -42,6 +46,62 @@
 extern ChirpProc c_grabFrame;
 
 constexpr int k_defaultServerPort = 8082;
+constexpr int k_defaultStreamFps = 30;
+constexpr int k_defaultJpegQuality = 85;
+constexpr int k_defaultMaxHttpClients = 8;
+constexpr int k_defaultRequestTimeoutMs = 5000;
+constexpr const char *k_defaultBindAddress = "127.0.0.1";
+
+namespace {
+
+int parseIntegerOption(QCommandLineParser *parser, const QCommandLineOption &option,
+                       int defaultValue, int minValue, int maxValue)
+{
+    if (!parser->isSet(option)) {
+        return defaultValue;
+    }
+
+    bool ok = false;
+    const QString rawValue = parser->value(option);
+    const int value = rawValue.toInt(&ok);
+    if (!ok || value < minValue || value > maxValue) {
+        qCritical().noquote() << QString("Invalid --%1 value '%2'. Expected %3-%4.")
+            .arg(option.names().last(), rawValue)
+            .arg(minValue)
+            .arg(maxValue);
+        parser->showHelp(1);
+    }
+
+    return value;
+}
+
+QHostAddress parseBindAddress(QCommandLineParser *parser, const QCommandLineOption &option,
+                              const QString &defaultValue)
+{
+    const QString rawValue = parser->isSet(option)
+        ? parser->value(option).trimmed()
+        : defaultValue;
+
+    if (rawValue.compare("localhost", Qt::CaseInsensitive) == 0 ||
+        rawValue.compare("loopback", Qt::CaseInsensitive) == 0) {
+        return QHostAddress(QHostAddress::LocalHost);
+    }
+
+    if (rawValue.compare("any", Qt::CaseInsensitive) == 0) {
+        return QHostAddress(QHostAddress::Any);
+    }
+
+    QHostAddress address;
+    if (!address.setAddress(rawValue)) {
+        qCritical().noquote() << QString("Invalid --%1 value '%2'. Use an IP address, localhost, loopback, or any.")
+            .arg(option.names().last(), rawValue);
+        parser->showHelp(1);
+    }
+
+    return address;
+}
+
+} // namespace
 
 MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     QMainWindow(parent),
@@ -64,7 +124,14 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     m_fwMessage = NULL;
     m_versionIncompatibility = false;
     m_testCycle = false;
-    m_httpPort = -1;  // -1 means use config/default
+    m_httpBindAddress = QHostAddress(k_defaultBindAddress);
+    m_httpPort = k_defaultServerPort;
+    m_httpFps = k_defaultStreamFps;
+    m_httpJpegQuality = k_defaultJpegQuality;
+    m_httpMaxClients = k_defaultMaxHttpClients;
+    m_httpRequestTimeoutMs = k_defaultRequestTimeoutMs;
+    m_httpEnabled = true;
+    m_httpServer = NULL;
     m_waiting = WAIT_NONE;
 
     parseCommandline(argc, argv);
@@ -111,9 +178,19 @@ MainWindow::MainWindow(int argc, char *argv[], QWidget *parent) :
     if (m_connect->getConnected()==NONE)
         error("No Pixy devices have been detected.\n");
 
-    // Start HTTP server for MJPEG streaming (use --port flag or default)
-    int serverPort = (m_httpPort > 0) ? m_httpPort : k_defaultServerPort;
-    m_httpServer = new HttpServer(static_cast<quint16>(serverPort));
+    // Start HTTP server for MJPEG streaming unless disabled.
+    if (m_httpEnabled) {
+        HttpServer::Options httpOptions;
+        httpOptions.bindAddress = m_httpBindAddress;
+        httpOptions.port = static_cast<quint16>(m_httpPort);
+        httpOptions.fps = m_httpFps;
+        httpOptions.jpegQuality = m_httpJpegQuality;
+        httpOptions.maxClients = m_httpMaxClients;
+        httpOptions.requestTimeoutMs = m_httpRequestTimeoutMs;
+        m_httpServer = new HttpServer(httpOptions, this);
+    } else {
+        qDebug() << "HTTP server disabled by command-line option";
+    }
 }
 
 MainWindow::~MainWindow()
@@ -132,35 +209,73 @@ MainWindow::~MainWindow()
 
 void MainWindow::parseCommandline(int argc, char *argv[])
 {
-    int i;
+    Q_UNUSED(argc);
+    Q_UNUSED(argv);
 
-    // when updating to Qt 5, we can use QCommandLineParser
-    for (i=1; i<argc; i++)
-    {
-        if (!strcmp("-firmware", argv[i]) && i+1<argc)
-        {
-            i++;
-            m_argvFirmwareFile = argv[i];
-            m_argvFirmwareFile.remove(QRegularExpression("[\"']"));
-        }
-        else if (!strcmp("-initscript", argv[i]) && i+1<argc)
-        {
-            i++;
-            m_initScript = argv[i];
-        }
-        else if (!strcmp("-tc", argv[i]))
-            m_testCycle = true;
-        else if (!strcmp("-pf", argv[i]) && i+1<argc)
-        {
-            i++;
-            m_pixyflash = argv[i];
-            m_pixyflash.remove(QRegularExpression("[\"']"));
-        }
-        else if ((!strcmp("-port", argv[i]) || !strcmp("--port", argv[i])) && i+1<argc)
-        {
-            i++;
-            m_httpPort = atoi(argv[i]);
-        }
+    QCommandLineParser parser;
+    parser.setApplicationDescription("PixyMon with Pixy2 HTTP streaming support.");
+    parser.setSingleDashWordOptionMode(QCommandLineParser::ParseAsLongOptions);
+    parser.addHelpOption();
+    parser.addVersionOption();
+
+    QCommandLineOption firmwareOption("firmware", "Firmware file to upload.", "file");
+    QCommandLineOption initScriptOption("initscript", "Initialization script to run.", "script");
+    QCommandLineOption testCycleOption("tc", "Enable test-cycle mode.");
+    QCommandLineOption pixyFlashOption("pf", "pixyflash image filename.", "file");
+    QCommandLineOption bindOption("bind",
+        "HTTP bind address. Use 127.0.0.1 for local-only or 0.0.0.0/any for LAN access.",
+        "address", k_defaultBindAddress);
+    QCommandLineOption portOption("port", "HTTP server port.", "port",
+        QString::number(k_defaultServerPort));
+    QCommandLineOption disableHttpOption("disable-http", "Disable the HTTP snapshot/stream server.");
+    QCommandLineOption fpsOption("fps", "MJPEG stream frame rate.", "fps",
+        QString::number(k_defaultStreamFps));
+    QCommandLineOption qualityOption("quality", "JPEG quality for snapshots and streams.", "quality",
+        QString::number(k_defaultJpegQuality));
+    QCommandLineOption maxClientsOption("max-clients", "Maximum simultaneous HTTP clients.", "count",
+        QString::number(k_defaultMaxHttpClients));
+    QCommandLineOption requestTimeoutOption("request-timeout-ms",
+        "Milliseconds to wait for complete HTTP request headers.", "milliseconds",
+        QString::number(k_defaultRequestTimeoutMs));
+
+    parser.addOption(firmwareOption);
+    parser.addOption(initScriptOption);
+    parser.addOption(testCycleOption);
+    parser.addOption(pixyFlashOption);
+    parser.addOption(bindOption);
+    parser.addOption(portOption);
+    parser.addOption(disableHttpOption);
+    parser.addOption(fpsOption);
+    parser.addOption(qualityOption);
+    parser.addOption(maxClientsOption);
+    parser.addOption(requestTimeoutOption);
+    parser.process(*QCoreApplication::instance());
+
+    m_httpEnabled = !parser.isSet(disableHttpOption);
+    m_httpBindAddress = parseBindAddress(&parser, bindOption, k_defaultBindAddress);
+    m_httpPort = parseIntegerOption(&parser, portOption, k_defaultServerPort, 1, 65535);
+    m_httpFps = parseIntegerOption(&parser, fpsOption, k_defaultStreamFps, 1, 60);
+    m_httpJpegQuality = parseIntegerOption(&parser, qualityOption, k_defaultJpegQuality, 1, 100);
+    m_httpMaxClients = parseIntegerOption(&parser, maxClientsOption, k_defaultMaxHttpClients, 1, 64);
+    m_httpRequestTimeoutMs = parseIntegerOption(&parser, requestTimeoutOption,
+        k_defaultRequestTimeoutMs, 1000, 60000);
+
+    if (parser.isSet(firmwareOption)) {
+        m_argvFirmwareFile = parser.value(firmwareOption);
+        m_argvFirmwareFile.remove(QRegularExpression("[\"']"));
+    }
+
+    if (parser.isSet(initScriptOption)) {
+        m_initScript = parser.value(initScriptOption);
+    }
+
+    if (parser.isSet(testCycleOption)) {
+        m_testCycle = true;
+    }
+
+    if (parser.isSet(pixyFlashOption)) {
+        m_pixyflash = parser.value(pixyFlashOption);
+        m_pixyflash.remove(QRegularExpression("[\"']"));
     }
 }
 
@@ -419,7 +534,8 @@ void MainWindow::connectPixy(bool state)
     }
 
     updateButtons();
-    m_httpServer->setInterpreter(m_interpreter);
+    if (m_httpServer)
+        m_httpServer->setInterpreter(m_interpreter);
 }
 
 void MainWindow::setEnabledActionsViews(bool enable)

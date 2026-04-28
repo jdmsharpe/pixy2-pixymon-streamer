@@ -16,6 +16,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QHostAddress>
 #include <QMainWindow>
 #include <vector>
 
@@ -121,7 +122,13 @@ private:
     QString m_argvFirmwareFile;
     QString m_initScript;
     QString m_pixyflash;
+    QHostAddress m_httpBindAddress;
     int m_httpPort;
+    int m_httpFps;
+    int m_httpJpegQuality;
+    int m_httpMaxClients;
+    int m_httpRequestTimeoutMs;
+    bool m_httpEnabled;
     bool m_versionIncompatibility;
     QSettings *m_settings;
     MonParameterDB m_parameters;
