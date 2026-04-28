@@ -125,6 +125,8 @@ qt6_add_resources(RCC_WRAPPERS ${RESOURCES})
 # Add the executable
 add_executable(${PROJECT_NAME} ${SOURCES} ${MOC_WRAPPERS} ${UI_WRAPPERS} ${RCC_WRAPPERS})
 
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 # Link against Qt6 libraries
 target_link_libraries(${PROJECT_NAME} Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Xml Qt6::Network)
 
