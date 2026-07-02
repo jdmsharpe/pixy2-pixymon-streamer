@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(PixyMon)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 
 # Find the Qt6 library components
 find_package(Qt6 COMPONENTS Core Gui Widgets Xml Network REQUIRED)
